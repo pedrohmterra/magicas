@@ -3,8 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#123F38">
 <title>Caderno de mágicas</title>
+<meta name="description" content="Catálogo pessoal de mágicas: vídeo de origem, categoria, status e o passo a passo.">
+<meta name="theme-color" content="#123F38">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mágicas">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,600&family=Karla:wght@400;500;700&display=swap" rel="stylesheet">
@@ -12,103 +20,140 @@
   :root{
     --felt:#123F38; --felt-2:#0D2F2A; --card:#F7F3E9; --card-2:#EDE7D8;
     --ink:#17191A; --ink-soft:#5A605C; --red:#B4342B; --brass:#C8A64B;
+    --safe-b:env(safe-area-inset-bottom,0px);
   }
   *,*::before,*::after{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
   body{
     margin:0; background:var(--felt); color:var(--card);
-    font-family:'Karla',ui-sans-serif,system-ui,sans-serif;
-    -webkit-font-smoothing:antialiased;
+    font-family:'Karla',ui-sans-serif,system-ui,-apple-system,sans-serif;
+    -webkit-font-smoothing:antialiased; overscroll-behavior-y:none;
   }
-  .wrap{max-width:640px;margin:0 auto;padding:22px 16px 40px}
-  button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
+  body.travado{overflow:hidden}
+  .wrap{max-width:640px;margin:0 auto;
+    padding:calc(20px + env(safe-area-inset-top,0px)) 16px calc(40px + var(--safe-b))}
+  button{font:inherit;cursor:pointer;border:none;background:none;color:inherit;
+    -webkit-tap-highlight-color:transparent}
   input,textarea{font:inherit;width:100%}
   :focus-visible{outline:2px solid var(--brass);outline-offset:2px;border-radius:3px}
 
-  h1.titulo{
-    font-family:'Bodoni Moda',Didot,Georgia,serif;font-weight:400;
-    font-size:clamp(30px,9vw,44px);line-height:.98;letter-spacing:-.01em;margin:0 0 6px;
-  }
+  h1.titulo{font-family:'Bodoni Moda',Didot,Georgia,serif;font-weight:400;
+    font-size:clamp(30px,9vw,44px);line-height:.98;letter-spacing:-.01em;margin:0 0 6px}
   .sub{color:#A8BDB6;font-size:14px;margin:0 0 20px;line-height:1.5}
 
   .placar{display:flex;gap:8px;margin-bottom:18px}
   .placar button{flex:1;background:var(--felt-2);border:1px solid rgba(247,243,233,.14);
-    border-radius:2px;padding:10px 8px;text-align:left;transition:border-color .15s}
+    border-radius:2px;padding:11px 8px;text-align:left;transition:border-color .15s}
   .placar button[data-on="true"]{border-color:var(--brass);background:#0A2621}
   .placar .n{font-family:'Bodoni Moda',serif;font-size:22px;display:block;line-height:1}
   .placar .l{font-size:11.5px;color:#9DB3AC;display:block;margin-top:3px}
 
   .barra{display:flex;gap:8px;margin-bottom:12px}
   .busca{flex:1;background:var(--felt-2);border:1px solid rgba(247,243,233,.16);
-    color:var(--card);padding:11px 12px;border-radius:2px;font-size:16px}
+    color:var(--card);padding:13px 12px;border-radius:2px;font-size:16px;min-height:48px}
   .busca::placeholder{color:#7F958E}
-  .add{background:var(--brass);color:#17191A;font-weight:700;padding:0 16px;border-radius:2px;
-    white-space:nowrap;font-size:15px}
+  .add{background:var(--brass);color:#17191A;font-weight:700;padding:0 18px;border-radius:2px;
+    white-space:nowrap;font-size:15px;min-height:48px}
 
-  .chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:14px;scrollbar-width:none}
+  .chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:14px;scrollbar-width:none;
+    -webkit-overflow-scrolling:touch}
   .chips::-webkit-scrollbar{display:none}
-  .chip{white-space:nowrap;font-size:13px;padding:6px 11px;border-radius:20px;
+  .chip{white-space:nowrap;font-size:13px;padding:8px 13px;border-radius:20px;
     border:1px solid rgba(247,243,233,.22);color:#CFDCD8}
   .chip[data-on="true"]{background:var(--card);color:var(--ink);border-color:var(--card);font-weight:500}
 
   .ficha{background:var(--card);color:var(--ink);border-radius:3px;padding:13px;margin-bottom:10px;
-    display:flex;gap:12px;align-items:flex-start;box-shadow:0 1px 0 rgba(0,0,0,.25)}
-  .thumb,.thumb-vazia{width:92px;height:69px;flex:0 0 92px;border-radius:2px;background:var(--card-2)}
+    display:flex;gap:12px;align-items:flex-start;box-shadow:0 1px 0 rgba(0,0,0,.25);
+    width:100%;text-align:left;cursor:pointer}
+  .ficha:active{background:#F1ECDF}
+  .thumb,.thumb-vazia{width:88px;height:66px;flex:0 0 88px;border-radius:2px;background:var(--card-2)}
   .thumb{object-fit:cover;display:block}
-  .thumb-vazia{display:grid;place-items:center;color:#B3A98F;font-size:26px;font-family:'Bodoni Moda',serif}
+  .thumb-vazia{display:grid;place-items:center;color:#B3A98F;font-size:24px;font-family:'Bodoni Moda',serif}
   .corpo{min-width:0;flex:1}
-  .ft{font-weight:700;font-size:15.5px;line-height:1.25;margin:0 0 5px}
-  .fd{font-size:13.5px;color:var(--ink-soft);line-height:1.45;margin:6px 0 0;
-    display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .ft{font-weight:700;font-size:16px;line-height:1.25;margin:0 0 7px;color:var(--ink)}
+  .fd{font-size:13.5px;color:var(--ink-soft);line-height:1.45;margin:7px 0 0;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
   .tag{font-size:11.5px;background:var(--card-2);padding:3px 7px;border-radius:2px;color:#4A4F4B}
   .st{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:#3D423F;
-    border:1px solid #D8D0BC;padding:4px 9px;border-radius:20px}
-  .st i{width:7px;height:7px;border-radius:50%;display:block}
-  .acoes{display:flex;gap:14px;align-items:center;margin-top:9px;flex-wrap:wrap}
-  .link{font-size:12.5px;color:var(--red);text-decoration:underline;text-underline-offset:2px}
-  .mini{font-size:12.5px;color:var(--ink-soft);text-decoration:underline;text-underline-offset:2px}
+    border:1px solid #D8D0BC;padding:6px 11px;border-radius:20px;background:#fff}
+  .st i{width:7px;height:7px;border-radius:50%;display:block;flex:0 0 7px}
+  .leia{font-size:12.5px;color:var(--red);margin-top:9px;display:block;
+    text-decoration:underline;text-underline-offset:2px}
 
   .vazio{border:1px dashed rgba(247,243,233,.28);border-radius:3px;padding:28px 20px;
     text-align:center;color:#A8BDB6;font-size:14px;line-height:1.5}
 
-  .rodape-app{margin-top:22px;text-align:center}
-  .rodape-app button{font-size:13px;color:#8FA8A1;text-decoration:underline;text-underline-offset:3px}
+  .rodape-app{margin-top:24px;display:flex;gap:18px;justify-content:center;flex-wrap:wrap}
+  .rodape-app button{font-size:13px;color:#8FA8A1;text-decoration:underline;
+    text-underline-offset:3px;padding:8px 4px}
 
-  .fundo{position:fixed;inset:0;background:rgba(7,25,22,.72);display:none;
+  /* ---------- folhas ---------- */
+  .fundo{position:fixed;inset:0;background:rgba(7,25,22,.75);display:none;
     align-items:flex-end;justify-content:center;z-index:20}
   .fundo.on{display:flex}
-  .modal{background:var(--card);color:var(--ink);width:100%;max-width:560px;max-height:92vh;
-    overflow-y:auto;border-radius:8px 8px 0 0;padding:20px 16px 24px}
-  .modal h2{font-family:'Bodoni Moda',serif;font-weight:400;font-size:24px;margin:0 0 16px}
+  .modal{background:var(--card);color:var(--ink);width:100%;max-width:560px;
+    height:94dvh;max-height:94dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    border-radius:10px 10px 0 0;padding:20px 16px calc(24px + var(--safe-b));
+    position:relative}
+  .modal h2{font-family:'Bodoni Moda',serif;font-weight:400;font-size:25px;line-height:1.1;
+    margin:0 0 16px;padding-right:44px}
   .modal h3{font-size:14px;margin:0 0 4px;font-weight:700}
-  .campo{margin-bottom:14px}
-  .campo label{display:block;font-size:13px;color:var(--ink-soft);margin-bottom:5px}
+  .fechar-x{position:absolute;top:14px;right:12px;width:38px;height:38px;border-radius:50%;
+    background:var(--card-2);color:#4A4F4B;font-size:19px;line-height:1;display:grid;place-items:center}
+
+  .campo{margin-bottom:16px}
+  .campo label{display:block;font-size:13px;color:var(--ink-soft);margin-bottom:6px}
   .campo input,.campo textarea{background:#fff;border:1px solid #D8D0BC;border-radius:2px;
-    padding:10px;color:var(--ink);font-size:16px}
-  .campo textarea{min-height:88px;resize:vertical;line-height:1.45}
+    padding:12px;color:var(--ink);font-size:16px}
+  .campo textarea{min-height:230px;resize:vertical;line-height:1.5}
+  .dica{font-size:12px;color:#7A807B;margin:6px 0 0;line-height:1.45}
   .op{display:flex;gap:6px;flex-wrap:wrap}
-  .op button{border:1px solid #D8D0BC;border-radius:20px;padding:6px 11px;font-size:13px;color:#4A4F4B}
+  .op button{border:1px solid #D8D0BC;border-radius:20px;padding:9px 13px;font-size:13.5px;color:#4A4F4B}
   .op button[data-on="true"]{background:var(--ink);color:var(--card);border-color:var(--ink)}
   .catnova{display:flex;gap:6px;margin-top:8px}
-  .catnova input{border:1px solid #D8D0BC;border-radius:2px;padding:8px;font-size:16px;background:#fff}
-  .catnova button{border:1px solid #D8D0BC;border-radius:2px;padding:0 12px;font-size:14px}
-  .rodape{display:flex;gap:10px;align-items:center;margin-top:20px}
-  .salvar{background:var(--ink);color:var(--card);padding:12px 20px;border-radius:2px;font-weight:700;flex:1}
-  .cancelar{color:var(--ink-soft);padding:12px 6px;font-size:14px}
-  .apagar{color:var(--red);font-size:13.5px;margin-left:auto}
+  .catnova input{border:1px solid #D8D0BC;border-radius:2px;padding:10px;font-size:16px;background:#fff}
+  .catnova button{border:1px solid #D8D0BC;border-radius:2px;padding:0 14px;font-size:14px}
+
+  .acoes-fixas{position:sticky;bottom:0;background:var(--card);border-top:1px solid #E2DAC7;
+    display:flex;gap:10px;align-items:center;padding:12px 0 4px;margin-top:20px}
+  .salvar{background:var(--ink);color:var(--card);padding:14px 20px;border-radius:2px;font-weight:700;flex:1}
+  .cancelar{color:var(--ink-soft);padding:14px 8px;font-size:14px}
+  .apagar{color:var(--red);font-size:13.5px;padding:14px 4px;margin-left:auto}
+
+  /* ---------- leitura ---------- */
+  .cabeca{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+  .botao-video{display:inline-flex;align-items:center;gap:8px;background:var(--red);color:#FFF6F4;
+    padding:11px 16px;border-radius:2px;font-size:14px;font-weight:700;text-decoration:none}
+  .leitura{font-size:16px;line-height:1.62;color:#2A2E2B;padding-bottom:4px}
+  .leitura p{margin:0 0 15px}
+  .leitura ol,.leitura ul{margin:0 0 15px;padding-left:24px}
+  .leitura li{margin-bottom:11px;padding-left:3px}
+  .leitura li::marker{color:var(--red);font-weight:700}
+  .leitura strong{color:var(--ink);font-weight:700}
+  .leitura h4{font-family:'Bodoni Moda',serif;font-weight:600;font-size:19px;line-height:1.2;
+    margin:26px 0 12px;color:var(--ink)}
+  .leitura h4:first-child{margin-top:0}
+  .leitura code{background:var(--card-2);padding:2px 6px;border-radius:2px;
+    font-family:ui-monospace,Menlo,monospace;font-size:14px}
+  .leitura .sem{color:#8A908B;font-style:italic}
+  .capa{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:3px;margin-bottom:14px;
+    background:var(--card-2);display:block}
 
   .bloco{border-top:1px solid #E2DAC7;padding-top:16px;margin-top:18px}
-  .bloco p,.txt{font-size:13px;color:var(--ink-soft);line-height:1.45;margin:0 0 10px}
+  .txt{font-size:13px;color:var(--ink-soft);line-height:1.45;margin:0 0 10px}
   .json{width:100%;min-height:96px;background:#FBF9F3;border:1px solid #D8D0BC;border-radius:2px;
-    padding:9px;font-family:ui-monospace,Menlo,monospace;font-size:11.5px;line-height:1.4;
+    padding:10px;font-family:ui-monospace,Menlo,monospace;font-size:12px;line-height:1.4;
     color:#4A4F4B;resize:vertical;margin-top:10px}
   .linha-b{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
-  .btn-escuro{background:var(--ink);color:var(--card);padding:10px 16px;border-radius:2px;font-weight:700;font-size:14px}
-  .btn-claro{border:1px solid #D8D0BC;padding:10px 14px;border-radius:2px;font-size:14px;color:#4A4F4B}
-  .btn-arquivo{border:1px solid #D8D0BC;padding:10px 14px;border-radius:2px;font-size:14px;
+  .btn-escuro{background:var(--ink);color:var(--card);padding:12px 16px;border-radius:2px;font-weight:700;font-size:14px}
+  .btn-claro{border:1px solid #D8D0BC;padding:12px 14px;border-radius:2px;font-size:14px;color:#4A4F4B}
+  .btn-arquivo{border:1px solid #D8D0BC;padding:12px 14px;border-radius:2px;font-size:14px;
     color:#4A4F4B;display:inline-block;cursor:pointer}
   .btn-arquivo input{display:none}
-  .nota{font-size:12.5px;color:#2F6B4F;margin-top:10px;line-height:1.4;min-height:1px}
+  .nota{font-size:12.5px;color:#2F6B4F;margin-top:10px;line-height:1.4}
+  ol.passos{padding-left:20px;font-size:13px;color:var(--ink-soft);line-height:1.5;margin:0}
+  ol.passos li{margin-bottom:6px}
 </style>
 </head>
 <body>
@@ -127,6 +172,7 @@
   <div id="lista"></div>
 
   <div class="rodape-app">
+    <button id="btn-instalar" hidden>Instalar no celular</button>
     <button id="btn-backup">Backup e restauração</button>
   </div>
 </div>
@@ -147,7 +193,8 @@
 
   var tricks = [];
   var busca = "", filtroCat = "todas", filtroStatus = "todos";
-  var formCats = [], formStatus = "vista", editandoId = null;
+  var formCats = [], formStatus = "vista", editandoId = null, lendoId = null;
+  var promptInstalar = null;
 
   var $ = function (id) { return document.getElementById(id); };
   var esc = function (s) {
@@ -156,6 +203,10 @@
     });
   };
   var uid = function () { return Math.random().toString(36).slice(2, 10); };
+  var acharTrick = function (id) {
+    for (var i = 0; i < tricks.length; i++) if (tricks[i].id === id) return tricks[i];
+    return null;
+  };
   var statusOf = function (id) {
     for (var i = 0; i < STATUS.length; i++) if (STATUS[i].id === id) return STATUS[i];
     return STATUS[0];
@@ -166,6 +217,43 @@
     return m ? m[1] : null;
   }
 
+  /* ---------- formatação do passo a passo ---------- */
+  function inline(t) {
+    t = esc(t);
+    t = t.replace(/`([^`]+)`/g, "<code>$1</code>");
+    t = t.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    t = t.replace(/^([^:<]{2,32}):(\s|$)/, "<strong>$1:</strong>$2");
+    return t;
+  }
+  function formatar(texto) {
+    if (!texto || !texto.trim()) return '<p class="sem">Sem descrição ainda. Toque em Editar para escrever o passo a passo.</p>';
+    return String(texto).replace(/\r/g, "").split(/\n\s*\n/).map(function (bloco) {
+      var linhas = bloco.split("\n").filter(function (l) { return l.trim() !== ""; });
+      if (!linhas.length) return "";
+      if (linhas.length === 1 && /^\s*#{1,6}\s+/.test(linhas[0])) {
+        return "<h4>" + inline(linhas[0].replace(/^\s*#{1,6}\s+/, "")) + "</h4>";
+      }
+      var numerado = linhas.every(function (l) { return /^\s*\d+[.)]\s+/.test(l); });
+      var marcado = linhas.every(function (l) { return /^\s*[-–—•*]\s+/.test(l); });
+      if (numerado) {
+        var inicio = parseInt(linhas[0].match(/\d+/)[0], 10) || 1;
+        return '<ol start="' + inicio + '">' + linhas.map(function (l) {
+          return "<li>" + inline(l.replace(/^\s*\d+[.)]\s+/, "")) + "</li>";
+        }).join("") + "</ol>";
+      }
+      if (marcado) {
+        return "<ul>" + linhas.map(function (l) {
+          return "<li>" + inline(l.replace(/^\s*[-–—•*]\s+/, "")) + "</li>";
+        }).join("") + "</ul>";
+      }
+      return "<p>" + linhas.map(inline).join("<br>") + "</p>";
+    }).join("");
+  }
+  function resumo(texto) {
+    return String(texto || "").replace(/[`*#>]/g, "").replace(/\s+/g, " ").trim();
+  }
+
+  /* ---------- dados ---------- */
   function carregar() {
     try {
       var raw = localStorage.getItem(KEY);
@@ -178,7 +266,6 @@
     catch (e) { alert("Não deu pra salvar. O armazenamento do navegador pode estar cheio ou bloqueado."); }
     render();
   }
-
   function categorias() {
     var todas = CATEGORIAS_BASE.slice();
     tricks.forEach(function (t) {
@@ -186,7 +273,6 @@
     });
     return todas;
   }
-
   function visiveis() {
     var q = busca.trim().toLowerCase();
     return tricks.filter(function (t) {
@@ -198,6 +284,7 @@
     }).sort(function (a, b) { return (b.criadoEm || 0) - (a.criadoEm || 0); });
   }
 
+  /* ---------- tela principal ---------- */
   function render() {
     var cont = {};
     STATUS.forEach(function (s) { cont[s.id] = 0; });
@@ -205,8 +292,8 @@
 
     $("placar").innerHTML = STATUS.map(function (s) {
       return '<button data-status="' + s.id + '" data-on="' + (filtroStatus === s.id) + '">' +
-        '<span class="n" style="color:' + s.dot + '">' + cont[s.id] + '</span>' +
-        '<span class="l">' + esc(s.label) + '</span></button>';
+        '<span class="n" style="color:' + s.dot + '">' + cont[s.id] + "</span>" +
+        '<span class="l">' + esc(s.label) + "</span></button>";
     }).join("");
 
     $("chips").innerHTML =
@@ -216,7 +303,7 @@
       }).join("");
 
     var lista = visiveis();
-    if (lista.length === 0) {
+    if (!lista.length) {
       $("lista").innerHTML = '<div class="vazio">' + (tricks.length === 0
         ? "Comece pelo último vídeo que te deixou curioso: cole o link, diga do que se trata e marque se já executou."
         : "Nada com esses filtros. Limpe a busca ou volte pra Todas.") + "</div>";
@@ -231,24 +318,59 @@
       var tags = (t.categorias || []).length
         ? '<div class="tags">' + t.categorias.map(function (c) { return '<span class="tag">' + esc(c) + "</span>"; }).join("") + "</div>"
         : "";
-      var desc = t.descricao ? '<p class="fd">' + esc(t.descricao) + "</p>" : "";
-      var link = t.link
-        ? '<a class="link" href="' + esc(t.link) + '" target="_blank" rel="noreferrer">Ver o vídeo</a>'
-        : "";
-      return '<article class="ficha">' + thumb + '<div class="corpo">' +
-        '<h3 class="ft">' + esc(t.titulo) + "</h3>" +
-        '<button class="st" data-ciclar="' + t.id + '" title="Toque para mudar o status">' +
+      var desc = t.descricao ? '<p class="fd">' + esc(resumo(t.descricao)) + "</p>" : "";
+      return '<article class="ficha" data-abrir="' + t.id + '" role="button" tabindex="0">' + thumb +
+        '<div class="corpo"><h3 class="ft">' + esc(t.titulo) + "</h3>" +
+        '<button class="st" data-ciclar="' + t.id + '" title="Mudar o status">' +
         '<i style="background:' + s.dot + '"></i>' + esc(s.label) + "</button>" +
         tags + desc +
-        '<div class="acoes">' + link +
-        '<button class="mini" data-editar="' + t.id + '">Editar</button></div>' +
+        '<span class="leia">Abrir passo a passo</span>' +
         "</div></article>";
     }).join("");
   }
 
-  /* ---------- modais ---------- */
-  function abrirOverlay(html) { $("modal").innerHTML = html; $("overlay").classList.add("on"); }
-  function fecharOverlay() { $("overlay").classList.remove("on"); $("modal").innerHTML = ""; editandoId = null; }
+  /* ---------- folhas ---------- */
+  function abrirOverlay(html) {
+    $("modal").innerHTML = html;
+    $("modal").scrollTop = 0;
+    $("overlay").classList.add("on");
+    document.body.classList.add("travado");
+  }
+  function fecharOverlay() {
+    $("overlay").classList.remove("on");
+    $("modal").innerHTML = "";
+    document.body.classList.remove("travado");
+    editandoId = null; lendoId = null;
+  }
+
+  function abrirLeitura(t) {
+    lendoId = t.id;
+    var s = statusOf(t.status), vid = videoId(t.link);
+    abrirOverlay(
+      '<button class="fechar-x" id="l-x" aria-label="Fechar">&times;</button>' +
+      "<h2>" + esc(t.titulo) + "</h2>" +
+      (vid ? '<img class="capa" alt="" src="https://i.ytimg.com/vi/' + vid + '/hqdefault.jpg">' : "") +
+      '<div class="cabeca">' +
+      '<button class="st" id="l-status"><i style="background:' + s.dot + '"></i>' + esc(s.label) + "</button>" +
+      (t.link ? '<a class="botao-video" href="' + esc(t.link) + '" target="_blank" rel="noreferrer">Ver o vídeo</a>' : "") +
+      "</div>" +
+      ((t.categorias || []).length
+        ? '<div class="tags" style="margin-bottom:16px">' + t.categorias.map(function (c) {
+            return '<span class="tag">' + esc(c) + "</span>"; }).join("") + "</div>"
+        : "") +
+      '<div class="leitura">' + formatar(t.descricao) + "</div>" +
+      '<div class="acoes-fixas"><button class="salvar" id="l-editar">Editar</button>' +
+      '<button class="cancelar" id="l-fechar">Fechar</button></div>'
+    );
+    $("l-x").addEventListener("click", fecharOverlay);
+    $("l-fechar").addEventListener("click", fecharOverlay);
+    $("l-editar").addEventListener("click", function () { abrirForm(acharTrick(lendoId)); });
+    $("l-status").addEventListener("click", function () {
+      ciclar(t.id);
+      var novo = statusOf(acharTrick(t.id).status);
+      $("l-status").innerHTML = '<i style="background:' + novo.dot + '"></i>' + esc(novo.label);
+    });
+  }
 
   function abrirForm(t) {
     editandoId = t ? t.id : null;
@@ -258,9 +380,10 @@
     formCats.forEach(function (c) { if (cats.indexOf(c) === -1) cats.push(c); });
 
     abrirOverlay(
+      '<button class="fechar-x" id="f-x" aria-label="Fechar">&times;</button>' +
       "<h2>" + (t ? "Editar mágica" : "Nova mágica") + "</h2>" +
       '<div class="campo"><label for="f-titulo">Título</label>' +
-      '<input id="f-titulo" value="' + esc(t ? t.titulo : "") + '" placeholder="Ex.: Efeito das 21 cartas"></div>' +
+      '<input id="f-titulo" value="' + esc(t ? t.titulo : "") + '" placeholder="Ex.: Mágica dos 6 montes até 13"></div>' +
       '<div class="campo"><label for="f-link">Link do vídeo</label>' +
       '<input id="f-link" value="' + esc(t ? t.link || "" : "") + '" placeholder="Cole o endereço do YouTube" inputmode="url"></div>' +
       '<div class="campo"><label>Categorias</label><div class="op" id="f-cats">' +
@@ -273,11 +396,14 @@
       STATUS.map(function (s) {
         return '<button data-st="' + s.id + '" data-on="' + (formStatus === s.id) + '">' + esc(s.label) + "</button>";
       }).join("") + "</div></div>" +
-      '<div class="campo"><label for="f-desc">Descrição</label>' +
-      '<textarea id="f-desc" placeholder="O efeito, o método, o que ainda trava, o momento certo de usar…">' +
-      esc(t ? t.descricao || "" : "") + "</textarea></div>" +
-      '<div class="rodape"><button class="salvar" id="f-salvar">' +
-      (t ? "Salvar alterações" : "Adicionar ao caderno") + "</button>" +
+      '<div class="campo"><label for="f-desc">Passo a passo</label>' +
+      '<textarea id="f-desc" placeholder="Preparação: nenhuma.&#10;&#10;1. Vire a primeira carta…&#10;2. Repita com a próxima…">' +
+      esc(t ? t.descricao || "" : "") + "</textarea>" +
+      '<p class="dica">Linha em branco separa os blocos. Linhas começando com <code>1.</code> viram lista numerada, ' +
+      'com <code>-</code> viram lista de tópicos. Use <code>**negrito**</code> e <code>`destaque`</code>. ' +
+      'Começar um parágrafo com “Algo:” deixa o rótulo em negrito.</p></div>' +
+      '<div class="acoes-fixas"><button class="salvar" id="f-salvar">' +
+      (t ? "Salvar" : "Adicionar") + "</button>" +
       '<button class="cancelar" id="f-cancelar">Cancelar</button>' +
       (t ? '<button class="apagar" id="f-apagar">Apagar</button>' : "") + "</div>"
     );
@@ -298,7 +424,11 @@
     function criarCat() {
       var v = $("f-novacat").value.trim(); if (!v) return;
       if (formCats.indexOf(v) === -1) formCats.push(v);
-      if (!$("f-cats").querySelector('[data-cat="' + v.replace(/"/g, '\\"') + '"]')) {
+      var existe = false;
+      Array.prototype.forEach.call($("f-cats").children, function (x) {
+        if (x.getAttribute("data-cat") === v) { existe = true; x.setAttribute("data-on", "true"); }
+      });
+      if (!existe) {
         var b = document.createElement("button");
         b.setAttribute("data-cat", v); b.setAttribute("data-on", "true"); b.textContent = v;
         $("f-cats").appendChild(b);
@@ -309,7 +439,8 @@
     $("f-novacat").addEventListener("keydown", function (e) {
       if (e.key === "Enter") { e.preventDefault(); criarCat(); }
     });
-    $("f-cancelar").addEventListener("click", fecharOverlay);
+    $("f-x").addEventListener("click", voltarOuFechar);
+    $("f-cancelar").addEventListener("click", voltarOuFechar);
     if ($("f-apagar")) $("f-apagar").addEventListener("click", function () {
       if (!confirm("Apagar esta mágica do caderno?")) return;
       tricks = tricks.filter(function (x) { return x.id !== editandoId; });
@@ -323,29 +454,55 @@
         link: $("f-link").value.trim(),
         categorias: formCats.slice(),
         status: formStatus,
-        descricao: $("f-desc").value.trim()
+        descricao: $("f-desc").value
       };
-      if (editandoId) {
-        tricks = tricks.map(function (x) {
-          return x.id === editandoId ? Object.assign({}, x, dados) : x;
-        });
+      var id = editandoId;
+      if (id) {
+        tricks = tricks.map(function (x) { return x.id === id ? Object.assign({}, x, dados) : x; });
       } else {
-        tricks.unshift(Object.assign({ id: uid(), criadoEm: Date.now() }, dados));
+        id = uid();
+        tricks.unshift(Object.assign({ id: id, criadoEm: Date.now() }, dados));
       }
-      fecharOverlay(); salvarTudo();
+      editandoId = null;
+      salvarTudo();
+      abrirLeitura(acharTrick(id));
     });
-    $("f-titulo").focus();
+    if (!t) $("f-titulo").focus();
+  }
+
+  function voltarOuFechar() {
+    var alvo = lendoId ? acharTrick(lendoId) : null;
+    if (alvo) abrirLeitura(alvo); else fecharOverlay();
+  }
+
+  function ciclar(id) {
+    tricks = tricks.map(function (t) {
+      if (t.id !== id) return t;
+      var i = 0;
+      STATUS.forEach(function (s, k) { if (s.id === t.status) i = k; });
+      return Object.assign({}, t, { status: STATUS[(i + 1) % STATUS.length].id });
+    });
+    salvarTudo();
   }
 
   function abrirBackup() {
     var json = JSON.stringify(tricks, null, 2);
+    var iosLike = /iPad|iPhone|iPod/.test(navigator.userAgent);
     abrirOverlay(
-      "<h2>Backup do caderno</h2>" +
-      "<h3>Guardar uma cópia</h3>" +
-      '<p class="txt">' + tricks.length + " mágicas no caderno. Os dados ficam só neste navegador, então " +
+      '<button class="fechar-x" id="b-x" aria-label="Fechar">&times;</button>' +
+      "<h2>Ajustes</h2>" +
+      "<h3>Instalar no celular</h3>" +
+      '<ol class="passos">' + (iosLike
+        ? "<li>Abra este site no Safari.</li><li>Toque no botão de compartilhar.</li>" +
+          "<li>Escolha “Adicionar à Tela de Início”.</li>"
+        : "<li>Abra o menu do navegador (os três pontinhos).</li>" +
+          "<li>Toque em “Instalar app” ou “Adicionar à tela inicial”.</li>") +
+      "</ol>" +
+      '<div class="bloco"><h3>Guardar uma cópia</h3>' +
+      '<p class="txt">' + tricks.length + " mágicas no caderno. Os dados ficam só neste aparelho, então " +
       "vale baixar o arquivo de vez em quando.</p>" +
       '<div class="linha-b"><button class="btn-escuro" id="b-baixar">Baixar arquivo</button></div>' +
-      '<textarea class="json" id="b-json" readonly>' + esc(json) + "</textarea>" +
+      '<textarea class="json" id="b-json" readonly>' + esc(json) + "</textarea></div>" +
       '<div class="bloco"><h3>Restaurar</h3>' +
       '<p class="txt">Escolha o arquivo salvo ou cole o conteúdo dele. Juntar mantém o que já existe; ' +
       "substituir apaga o caderno atual.</p>" +
@@ -354,7 +511,7 @@
       '<div class="linha-b"><button class="btn-escuro" id="b-juntar">Juntar ao caderno</button>' +
       '<button class="btn-claro" id="b-substituir">Substituir tudo</button></div></div>' +
       '<p class="nota" id="b-msg"></p>' +
-      '<div class="rodape"><button class="cancelar" id="b-fechar">Fechar</button></div>'
+      '<div class="acoes-fixas"><button class="cancelar" id="b-fechar">Fechar</button></div>'
     );
 
     var msg = function (t) { $("b-msg").textContent = t; };
@@ -368,7 +525,7 @@
         a.download = "caderno-magicas-" + new Date().toISOString().slice(0, 10) + ".json";
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
         setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
-        msg("Arquivo gerado. Procure na sua pasta de downloads.");
+        msg("Arquivo gerado. Procure nos seus downloads.");
       } catch (e) { msg("O download falhou. Copie o texto acima e guarde numa nota."); }
     });
     $("b-file").addEventListener("change", function (e) {
@@ -397,7 +554,7 @@
       if (!texto) { msg("Cole o conteúdo do backup ou escolha um arquivo."); return; }
       var dados;
       try { dados = JSON.parse(texto); } catch (e) { msg("Esse texto não é um backup válido."); return; }
-      if (!Object.prototype.toString.call(dados).match(/Array/)) { msg("O backup precisa ser uma lista de mágicas."); return; }
+      if (!Array.isArray(dados)) { msg("O backup precisa ser uma lista de mágicas."); return; }
       var lidas = dados.filter(function (d) { return d && d.titulo; }).map(normalizar);
       if (!lidas.length) { msg("Nenhuma mágica encontrada nesse arquivo."); return; }
       if (modo === "substituir") {
@@ -415,12 +572,13 @@
     }
     $("b-juntar").addEventListener("click", function () { restaurar("juntar"); });
     $("b-substituir").addEventListener("click", function () { restaurar("substituir"); });
+    $("b-x").addEventListener("click", fecharOverlay);
     $("b-fechar").addEventListener("click", fecharOverlay);
   }
 
-  /* ---------- eventos globais ---------- */
+  /* ---------- eventos ---------- */
   $("busca").addEventListener("input", function (e) { busca = e.target.value; render(); });
-  $("btn-nova").addEventListener("click", function () { abrirForm(null); });
+  $("btn-nova").addEventListener("click", function () { lendoId = null; abrirForm(null); });
   $("btn-backup").addEventListener("click", abrirBackup);
 
   $("placar").addEventListener("click", function (e) {
@@ -436,29 +594,42 @@
     render();
   });
   $("lista").addEventListener("click", function (e) {
-    var ed = e.target.closest("button[data-editar]");
-    if (ed) {
-      var id = ed.getAttribute("data-editar");
-      var alvo = tricks.filter(function (t) { return t.id === id; })[0];
-      if (alvo) abrirForm(alvo);
-      return;
-    }
     var ci = e.target.closest("button[data-ciclar]");
-    if (ci) {
-      var cid = ci.getAttribute("data-ciclar");
-      tricks = tricks.map(function (t) {
-        if (t.id !== cid) return t;
-        var i = 0;
-        STATUS.forEach(function (s, k) { if (s.id === t.status) i = k; });
-        return Object.assign({}, t, { status: STATUS[(i + 1) % STATUS.length].id });
-      });
-      salvarTudo();
-    }
+    if (ci) { e.stopPropagation(); ciclar(ci.getAttribute("data-ciclar")); return; }
+    var ab = e.target.closest("[data-abrir]");
+    if (ab) { var t = acharTrick(ab.getAttribute("data-abrir")); if (t) abrirLeitura(t); }
+  });
+  $("lista").addEventListener("keydown", function (e) {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    var ab = e.target.closest("[data-abrir]");
+    if (ab) { e.preventDefault(); var t = acharTrick(ab.getAttribute("data-abrir")); if (t) abrirLeitura(t); }
   });
   $("overlay").addEventListener("click", function (e) { if (e.target === $("overlay")) fecharOverlay(); });
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && $("overlay").classList.contains("on")) fecharOverlay();
   });
+
+  /* ---------- instalação ---------- */
+  window.addEventListener("beforeinstallprompt", function (e) {
+    e.preventDefault();
+    promptInstalar = e;
+    $("btn-instalar").hidden = false;
+  });
+  $("btn-instalar").addEventListener("click", function () {
+    if (!promptInstalar) return;
+    promptInstalar.prompt();
+    promptInstalar.userChoice.then(function () {
+      promptInstalar = null;
+      $("btn-instalar").hidden = true;
+    });
+  });
+  window.addEventListener("appinstalled", function () { $("btn-instalar").hidden = true; });
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("./sw.js").catch(function () {});
+    });
+  }
 
   carregar();
   render();

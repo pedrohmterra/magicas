@@ -1,0 +1,20 @@
+{
+  "name": "Caderno de mágicas",
+  "short_name": "Mágicas",
+  "description": "Catálogo pessoal de mágicas: vídeo de origem, categoria, status e o passo a passo.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#123F38",
+  "theme_color": "#123F38",
+  "categories": ["education", "lifestyle", "productivity"],
+  "icons": [
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
