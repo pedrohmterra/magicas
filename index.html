@@ -107,6 +107,7 @@
   .campo input,.campo textarea{background:#fff;border:1px solid #D8D0BC;border-radius:2px;
     padding:12px;color:var(--ink);font-size:16px}
   .campo textarea{min-height:230px;resize:vertical;line-height:1.5}
+  #f-desc{min-height:58dvh;resize:none;overflow:hidden;line-height:1.6;padding:14px}
   .dica{font-size:12px;color:#7A807B;margin:6px 0 0;line-height:1.45}
   .op{display:flex;gap:6px;flex-wrap:wrap}
   .op button{border:1px solid #D8D0BC;border-radius:20px;padding:9px 13px;font-size:13.5px;color:#4A4F4B}
@@ -435,6 +436,15 @@
       }
       $("f-novacat").value = "";
     }
+    // a área de escrita cresce junto com o texto, sem rolagem interna
+    var desc = $("f-desc");
+    function crescer() {
+      desc.style.height = "auto";
+      desc.style.height = desc.scrollHeight + 2 + "px";
+    }
+    desc.addEventListener("input", crescer);
+    setTimeout(crescer, 0);
+
     $("f-addcat").addEventListener("click", criarCat);
     $("f-novacat").addEventListener("keydown", function (e) {
       if (e.key === "Enter") { e.preventDefault(); criarCat(); }
