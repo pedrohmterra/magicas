@@ -155,22 +155,63 @@
   .nota{font-size:12.5px;color:#2F6B4F;margin-top:10px;line-height:1.4}
   ol.passos{padding-left:20px;font-size:13px;color:var(--ink-soft);line-height:1.5;margin:0}
   ol.passos li{margin-bottom:6px}
+
+  /* ---------- abas ---------- */
+  .abas{display:flex;gap:4px;margin:0 0 18px;background:var(--felt-2);padding:4px;
+    border-radius:3px;border:1px solid rgba(247,243,233,.12)}
+  .abas button{flex:1;padding:12px 8px;border-radius:2px;font-size:14.5px;color:#9DB3AC;font-weight:500}
+  .abas button[data-on="true"]{background:var(--card);color:var(--ink);font-weight:700}
+
+  /* ---------- manobras ---------- */
+  .grade{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  @media(min-width:560px){.grade{grid-template-columns:repeat(3,1fr)}}
+  .mv{background:var(--card);color:var(--ink);border-radius:3px;overflow:hidden;text-align:left;
+    box-shadow:0 1px 0 rgba(0,0,0,.25);display:flex;flex-direction:column;cursor:pointer;
+    padding:0;width:100%}
+  .mv:active{background:#F1ECDF}
+  .mv .capa-m,.mv .sem-capa{width:100%;aspect-ratio:16/9;object-fit:cover;
+    background:var(--card-2);display:block}
+  .mv .sem-capa{display:grid;place-items:center;color:#B3A98F;font-size:22px;
+    font-family:'Bodoni Moda',serif}
+  .mv .mt{font-weight:700;font-size:14px;line-height:1.3;padding:10px 10px 0;color:var(--ink);
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .mv .mr{padding:9px 10px 10px;display:flex;align-items:center;gap:9px;margin-top:auto;flex-wrap:wrap}
+  .mv .st{font-size:11.5px;padding:5px 9px}
+  .mv .abrir{font-size:11.5px;color:var(--red);text-decoration:underline;text-underline-offset:2px}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1 class="titulo">Caderno de mágicas</h1>
-  <p class="sub">Tudo que você viu, estudou e já levou pra mesa — com o vídeo de origem junto.</p>
+  <p class="sub" id="sub">Tudo que você viu, estudou e já levou pra mesa — com o vídeo de origem junto.</p>
 
-  <div class="placar" id="placar"></div>
-
-  <div class="barra">
-    <input class="busca" id="busca" placeholder="Buscar por título, tag ou descrição" autocomplete="off">
-    <button class="add" id="btn-nova">Nova</button>
+  <div class="abas" id="abas">
+    <button data-aba="magicas" data-on="true">Mágicas</button>
+    <button data-aba="manobras" data-on="false">Manobras</button>
   </div>
 
-  <div class="chips" id="chips"></div>
-  <div id="lista"></div>
+  <div id="vista-magicas">
+    <div class="placar" id="placar"></div>
+
+    <div class="barra">
+      <input class="busca" id="busca" placeholder="Buscar por título, tag ou descrição" autocomplete="off">
+      <button class="add" id="btn-nova">Nova</button>
+    </div>
+
+    <div class="chips" id="chips"></div>
+    <div id="lista"></div>
+  </div>
+
+  <div id="vista-manobras" hidden>
+    <div class="placar" id="placar-m"></div>
+
+    <div class="barra">
+      <input class="busca" id="busca-m" placeholder="Buscar manobra" autocomplete="off">
+      <button class="add" id="btn-nova-m">Nova</button>
+    </div>
+
+    <div id="grade" class="grade"></div>
+  </div>
 
   <div class="rodape-app">
     <button id="btn-instalar" hidden>Instalar no celular</button>
@@ -192,10 +233,20 @@
   ];
   var CATEGORIAS_BASE = ["Matemática","Preparação","Manobra","Cartomagia","Mentalismo","Moedas","Impromptu"];
 
+  var MKEY = "manobras:v1";
+  var MSTATUS = [
+    { id: "treinando", label: "Treinando", dot: "#D8752F" },
+    { id: "faco", label: "Já faço", dot: "#4E9C6B" }
+  ];
+
   var tricks = [];
   var busca = "", filtroCat = "todas", filtroStatus = "todos";
   var formCats = [], formStatus = "vista", editandoId = null, lendoId = null;
   var promptInstalar = null;
+
+  var manobras = [];
+  var buscaM = "", filtroStatusM = "todos", formStatusM = "treinando", editandoM = null;
+  var aba = "magicas";
 
   var $ = function (id) { return document.getElementById(id); };
   var esc = function (s) {
@@ -495,8 +546,138 @@
     salvarTudo();
   }
 
+  /* ---------- manobras ---------- */
+  var mstatusOf = function (id) {
+    for (var i = 0; i < MSTATUS.length; i++) if (MSTATUS[i].id === id) return MSTATUS[i];
+    return MSTATUS[0];
+  };
+  var acharManobra = function (id) {
+    for (var i = 0; i < manobras.length; i++) if (manobras[i].id === id) return manobras[i];
+    return null;
+  };
+  function carregarM() {
+    try {
+      var raw = localStorage.getItem(MKEY);
+      manobras = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(manobras)) manobras = [];
+    } catch (e) { manobras = []; }
+  }
+  function salvarM() {
+    try { localStorage.setItem(MKEY, JSON.stringify(manobras)); }
+    catch (e) { alert("Não deu pra salvar. O armazenamento do navegador pode estar cheio ou bloqueado."); }
+    renderM();
+  }
+  function visiveisM() {
+    var q = buscaM.trim().toLowerCase();
+    return manobras.filter(function (m) {
+      if (filtroStatusM !== "todos" && m.status !== filtroStatusM) return false;
+      return !q || m.titulo.toLowerCase().indexOf(q) !== -1;
+    }).sort(function (a, b) { return (b.criadoEm || 0) - (a.criadoEm || 0); });
+  }
+  function renderM() {
+    var cont = {};
+    MSTATUS.forEach(function (s) { cont[s.id] = 0; });
+    manobras.forEach(function (m) { if (cont[m.status] != null) cont[m.status]++; });
+
+    $("placar-m").innerHTML = MSTATUS.map(function (s) {
+      return '<button data-status="' + s.id + '" data-on="' + (filtroStatusM === s.id) + '">' +
+        '<span class="n" style="color:' + s.dot + '">' + cont[s.id] + "</span>" +
+        '<span class="l">' + esc(s.label) + "</span></button>";
+    }).join("");
+
+    var lista = visiveisM();
+    if (!lista.length) {
+      $("grade").innerHTML = '<div class="vazio" style="grid-column:1/-1">' + (manobras.length === 0
+        ? "Cole o link de uma manobra que você quer tirar: um embaralhamento, um corte, uma passada."
+        : "Nada com esse filtro.") + "</div>";
+      return;
+    }
+    $("grade").innerHTML = lista.map(function (m) {
+      var vid = videoId(m.link), s = mstatusOf(m.status);
+      var capa = vid
+        ? '<img class="capa-m" alt="" loading="lazy" src="https://i.ytimg.com/vi/' + vid + '/mqdefault.jpg">'
+        : '<div class="sem-capa" aria-hidden="true">&spades;</div>';
+      return '<article class="mv" data-editar-m="' + m.id + '" role="button" tabindex="0">' + capa +
+        '<div class="mt">' + esc(m.titulo) + "</div><div class=\"mr\">" +
+        '<button class="st" data-ciclar-m="' + m.id + '" title="Mudar o status">' +
+        '<i style="background:' + s.dot + '"></i>' + esc(s.label) + "</button>" +
+        (m.link ? '<a class="abrir" href="' + esc(m.link) + '" target="_blank" rel="noreferrer">Vídeo</a>' : "") +
+        "</div></article>";
+    }).join("");
+  }
+  function ciclarM(id) {
+    manobras = manobras.map(function (m) {
+      if (m.id !== id) return m;
+      var i = 0;
+      MSTATUS.forEach(function (s, k) { if (s.id === m.status) i = k; });
+      return Object.assign({}, m, { status: MSTATUS[(i + 1) % MSTATUS.length].id });
+    });
+    salvarM();
+  }
+  function abrirFormManobra(m) {
+    editandoM = m ? m.id : null;
+    formStatusM = m ? m.status : "treinando";
+    abrirOverlay(
+      '<button class="fechar-x" id="m-x" aria-label="Fechar">&times;</button>' +
+      "<h2>" + (m ? "Editar manobra" : "Nova manobra") + "</h2>" +
+      '<div class="campo"><label for="m-titulo">Nome da manobra</label>' +
+      '<input id="m-titulo" value="' + esc(m ? m.titulo : "") + '" placeholder="Ex.: Faro shuffle"></div>' +
+      '<div class="campo"><label for="m-link">Link do vídeo</label>' +
+      '<input id="m-link" value="' + esc(m ? m.link || "" : "") + '" placeholder="Cole o endereço do YouTube" inputmode="url"></div>' +
+      '<div class="campo"><label>Como está</label><div class="op" id="m-status">' +
+      MSTATUS.map(function (s) {
+        return '<button data-st="' + s.id + '" data-on="' + (formStatusM === s.id) + '">' + esc(s.label) + "</button>";
+      }).join("") + "</div></div>" +
+      '<div class="acoes-fixas"><button class="salvar" id="m-salvar">' + (m ? "Salvar" : "Adicionar") + "</button>" +
+      '<button class="cancelar" id="m-cancelar">Cancelar</button>' +
+      (m ? '<button class="apagar" id="m-apagar">Apagar</button>' : "") + "</div>"
+    );
+    $("m-status").addEventListener("click", function (e) {
+      var b = e.target.closest("button[data-st]"); if (!b) return;
+      formStatusM = b.getAttribute("data-st");
+      Array.prototype.forEach.call($("m-status").children, function (x) {
+        x.setAttribute("data-on", x.getAttribute("data-st") === formStatusM);
+      });
+    });
+    $("m-x").addEventListener("click", fecharOverlay);
+    $("m-cancelar").addEventListener("click", fecharOverlay);
+    if ($("m-apagar")) $("m-apagar").addEventListener("click", function () {
+      if (!confirm("Apagar esta manobra?")) return;
+      manobras = manobras.filter(function (x) { return x.id !== editandoM; });
+      fecharOverlay(); salvarM();
+    });
+    $("m-salvar").addEventListener("click", function () {
+      var titulo = $("m-titulo").value.trim();
+      if (!titulo) { $("m-titulo").focus(); return; }
+      var dados = { titulo: titulo, link: $("m-link").value.trim(), status: formStatusM };
+      if (editandoM) {
+        var id = editandoM;
+        manobras = manobras.map(function (x) { return x.id === id ? Object.assign({}, x, dados) : x; });
+      } else {
+        manobras.unshift(Object.assign({ id: uid(), criadoEm: Date.now() }, dados));
+      }
+      editandoM = null;
+      fecharOverlay(); salvarM();
+    });
+    if (!m) $("m-titulo").focus();
+  }
+
+  function trocarAba(nome) {
+    aba = nome === "manobras" ? "manobras" : "magicas";
+    try { localStorage.setItem("caderno:aba", aba); } catch (e) {}
+    Array.prototype.forEach.call($("abas").children, function (b) {
+      b.setAttribute("data-on", b.getAttribute("data-aba") === aba);
+    });
+    $("vista-magicas").hidden = aba !== "magicas";
+    $("vista-manobras").hidden = aba !== "manobras";
+    $("sub").textContent = aba === "manobras"
+      ? "Só as manobras: o vídeo e se você já faz ou ainda está treinando."
+      : "Tudo que você viu, estudou e já levou pra mesa — com o vídeo de origem junto.";
+    window.scrollTo(0, 0);
+  }
+
   function abrirBackup() {
-    var json = JSON.stringify(tricks, null, 2);
+    var json = JSON.stringify({ versao: 2, magicas: tricks, manobras: manobras }, null, 2);
     var iosLike = /iPad|iPhone|iPod/.test(navigator.userAgent);
     abrirOverlay(
       '<button class="fechar-x" id="b-x" aria-label="Fechar">&times;</button>' +
@@ -509,8 +690,8 @@
           "<li>Toque em “Instalar app” ou “Adicionar à tela inicial”.</li>") +
       "</ol>" +
       '<div class="bloco"><h3>Guardar uma cópia</h3>' +
-      '<p class="txt">' + tricks.length + " mágicas no caderno. Os dados ficam só neste aparelho, então " +
-      "vale baixar o arquivo de vez em quando.</p>" +
+      '<p class="txt">' + tricks.length + " mágicas e " + manobras.length + " manobras. " +
+      "Os dados ficam só neste aparelho, então vale baixar o arquivo de vez em quando.</p>" +
       '<div class="linha-b"><button class="btn-escuro" id="b-baixar">Baixar arquivo</button></div>' +
       '<textarea class="json" id="b-json" readonly>' + esc(json) + "</textarea></div>" +
       '<div class="bloco"><h3>Restaurar</h3>' +
@@ -559,26 +740,48 @@
         descricao: i.descricao || ""
       };
     }
+    function normalizarM(i) {
+      var st = "treinando";
+      MSTATUS.forEach(function (s) { if (s.id === i.status) st = i.status; });
+      return {
+        id: i.id || uid(),
+        criadoEm: i.criadoEm || Date.now(),
+        titulo: String(i.titulo || "").trim(),
+        link: i.link || "",
+        status: st
+      };
+    }
     function restaurar(modo) {
       var texto = $("b-cola").value.trim();
       if (!texto) { msg("Cole o conteúdo do backup ou escolha um arquivo."); return; }
       var dados;
       try { dados = JSON.parse(texto); } catch (e) { msg("Esse texto não é um backup válido."); return; }
-      if (!Array.isArray(dados)) { msg("O backup precisa ser uma lista de mágicas."); return; }
-      var lidas = dados.filter(function (d) { return d && d.titulo; }).map(normalizar);
-      if (!lidas.length) { msg("Nenhuma mágica encontrada nesse arquivo."); return; }
+
+      // backup antigo era só a lista de mágicas; o novo traz os dois cadernos
+      var brutoMag = Array.isArray(dados) ? dados : (dados && Array.isArray(dados.magicas) ? dados.magicas : []);
+      var brutoMan = (dados && Array.isArray(dados.manobras)) ? dados.manobras : [];
+      var lidas = brutoMag.filter(function (d) { return d && d.titulo; }).map(normalizar);
+      var lidasM = brutoMan.filter(function (d) { return d && d.titulo; }).map(normalizarM);
+      if (!lidas.length && !lidasM.length) { msg("Nenhuma mágica ou manobra encontrada nesse arquivo."); return; }
+
       if (modo === "substituir") {
-        if (!confirm("Isso apaga as " + tricks.length + " mágicas atuais. Continuar?")) return;
-        tricks = lidas;
-        msg("Caderno substituído: " + lidas.length + " mágicas.");
+        if (!confirm("Isso apaga as " + tricks.length + " mágicas e " + manobras.length +
+          " manobras atuais. Continuar?")) return;
+        tricks = lidas; manobras = lidasM;
+        msg("Substituído: " + lidas.length + " mágicas e " + lidasM.length + " manobras.");
       } else {
         var ids = tricks.map(function (t) { return t.id; });
         var novas = lidas.filter(function (l) { return ids.indexOf(l.id) === -1; });
         tricks = novas.concat(tricks);
-        msg(novas.length ? novas.length + " mágicas adicionadas." : "Nada novo: todas já estavam no caderno.");
+        var idsM = manobras.map(function (m) { return m.id; });
+        var novasM = lidasM.filter(function (l) { return idsM.indexOf(l.id) === -1; });
+        manobras = novasM.concat(manobras);
+        msg((novas.length + novasM.length)
+          ? novas.length + " mágicas e " + novasM.length + " manobras adicionadas."
+          : "Nada novo: tudo já estava no caderno.");
       }
       $("b-cola").value = "";
-      salvarTudo();
+      salvarTudo(); salvarM();
     }
     $("b-juntar").addEventListener("click", function () { restaurar("juntar"); });
     $("b-substituir").addEventListener("click", function () { restaurar("substituir"); });
@@ -614,6 +817,30 @@
     var ab = e.target.closest("[data-abrir]");
     if (ab) { e.preventDefault(); var t = acharTrick(ab.getAttribute("data-abrir")); if (t) abrirLeitura(t); }
   });
+  $("abas").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-aba]"); if (!b) return;
+    trocarAba(b.getAttribute("data-aba"));
+  });
+  $("busca-m").addEventListener("input", function (e) { buscaM = e.target.value; renderM(); });
+  $("btn-nova-m").addEventListener("click", function () { abrirFormManobra(null); });
+  $("placar-m").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-status]"); if (!b) return;
+    var s = b.getAttribute("data-status");
+    filtroStatusM = filtroStatusM === s ? "todos" : s;
+    renderM();
+  });
+  $("grade").addEventListener("click", function (e) {
+    var ci = e.target.closest("button[data-ciclar-m]");
+    if (ci) { e.stopPropagation(); ciclarM(ci.getAttribute("data-ciclar-m")); return; }
+    if (e.target.closest("a")) return;
+    var ed = e.target.closest("[data-editar-m]");
+    if (ed) { var m = acharManobra(ed.getAttribute("data-editar-m")); if (m) abrirFormManobra(m); }
+  });
+  $("grade").addEventListener("keydown", function (e) {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    var ed = e.target.closest("[data-editar-m]");
+    if (ed) { e.preventDefault(); var m = acharManobra(ed.getAttribute("data-editar-m")); if (m) abrirFormManobra(m); }
+  });
   $("overlay").addEventListener("click", function (e) { if (e.target === $("overlay")) fecharOverlay(); });
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && $("overlay").classList.contains("on")) fecharOverlay();
@@ -642,7 +869,12 @@
   }
 
   carregar();
+  carregarM();
   render();
+  renderM();
+  var salva = "magicas";
+  try { salva = localStorage.getItem("caderno:aba") || "magicas"; } catch (e) {}
+  trocarAba(salva);
 })();
 </script>
 </body>
