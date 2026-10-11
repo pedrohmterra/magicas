@@ -1,6 +1,6 @@
 /* Caderno de mágicas — service worker
    Troque a versão abaixo sempre que publicar uma alteração no index.html. */
-const VERSAO = "caderno-v4";
+const VERSAO = "caderno-v5";
 const SHELL = VERSAO + "-shell";
 const RUNTIME = VERSAO + "-runtime";
 

@@ -695,12 +695,14 @@
       '<div class="bloco"><h3>Guardar uma cópia</h3>' +
       '<p class="txt">' + tricks.length + " mágicas e " + manobras.length + " manobras. " +
       "Os dados ficam só neste aparelho, então vale baixar o arquivo de vez em quando.</p>" +
-      '<div class="linha-b"><button class="btn-escuro" id="b-baixar">Baixar arquivo</button></div>' +
+      '<div class="linha-b"><button class="btn-escuro" id="b-baixar">Baixar arquivo</button>' +
+      '<button class="btn-claro" id="b-copiar">Copiar texto</button>' +
+      '<button class="btn-claro" id="b-enviar" hidden>Enviar</button></div>' +
       '<textarea class="json" id="b-json" readonly>' + esc(json) + "</textarea></div>" +
       '<div class="bloco"><h3>Restaurar</h3>' +
       '<p class="txt">Escolha o arquivo salvo ou cole o conteúdo dele. Juntar mantém o que já existe; ' +
       "substituir apaga o caderno atual.</p>" +
-      '<label class="btn-arquivo">Escolher arquivo<input type="file" id="b-file" accept=".json,application/json"></label>' +
+      '<label class="btn-arquivo">Escolher arquivo<input type="file" id="b-file"></label>' +
       '<textarea class="json" id="b-cola" placeholder="Ou cole aqui o conteúdo do backup"></textarea>' +
       '<div class="linha-b"><button class="btn-escuro" id="b-juntar">Juntar ao caderno</button>' +
       '<button class="btn-claro" id="b-substituir">Substituir tudo</button></div></div>' +
@@ -722,6 +724,36 @@
         msg("Arquivo gerado. Procure nos seus downloads.");
       } catch (e) { msg("O download falhou. Copie o texto acima e guarde numa nota."); }
     });
+    $("b-copiar").addEventListener("click", function () {
+      function viaCampo() {
+        var t = $("b-json");
+        t.focus(); t.select(); t.setSelectionRange(0, 999999);
+        try {
+          document.execCommand("copy");
+          msg("Texto copiado. Dá pra colar numa conversa ou numa nota.");
+        } catch (e2) {
+          msg("Seu navegador não deixou copiar. Toque na caixa de texto e copie na mão.");
+        }
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(json).then(function () {
+          msg("Texto copiado. Dá pra colar numa conversa ou numa nota.");
+        }, viaCampo);
+      } else { viaCampo(); }
+    });
+
+    // compartilhar o arquivo direto, quando o aparelho souber fazer isso
+    try {
+      var arq = new File([json], "caderno-magicas-" + new Date().toISOString().slice(0, 10) + ".json",
+        { type: "application/json" });
+      if (navigator.canShare && navigator.canShare({ files: [arq] })) {
+        $("b-enviar").hidden = false;
+        $("b-enviar").addEventListener("click", function () {
+          navigator.share({ files: [arq], title: "Backup do caderno" }).catch(function () {});
+        });
+      }
+    } catch (e) {}
+
     $("b-file").addEventListener("change", function (e) {
       var f = e.target.files && e.target.files[0]; if (!f) return;
       var r = new FileReader();
