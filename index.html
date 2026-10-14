@@ -64,7 +64,22 @@
 
   .ficha{background:var(--card);color:var(--ink);border-radius:3px;padding:13px;margin-bottom:10px;
     display:flex;gap:12px;align-items:flex-start;box-shadow:0 1px 0 rgba(0,0,0,.25);
-    width:100%;text-align:left;cursor:pointer}
+    width:100%;text-align:left;cursor:pointer;position:relative}
+  .ficha[data-rep="true"]{box-shadow:inset 5px 0 0 var(--red),0 1px 0 rgba(0,0,0,.25);
+    padding-left:18px}
+  .no-palco{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;
+    color:var(--red);border:1px solid var(--red);padding:5px 10px;border-radius:20px}
+  .estrela{position:absolute;top:7px;right:5px;width:42px;height:42px;display:grid;
+    place-items:center;font-size:20px;line-height:1;color:#C9C0AA;border-radius:50%}
+  .estrela[data-on="true"]{color:var(--red)}
+  .estrela:active{background:var(--card-2)}
+  .ficha .ft{padding-right:36px}
+
+  .faixa-rep{margin:0 0 12px}
+  .faixa-rep button{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;
+    background:var(--felt-2);border:1px solid var(--red);color:#F0D6D3;
+    padding:13px 10px;border-radius:2px;font-size:14px;font-weight:700}
+  .faixa-rep button[data-on="true"]{background:var(--red);color:#FFF3F1}
   .ficha:active{background:#F1ECDF}
   .thumb,.thumb-vazia{width:88px;height:66px;flex:0 0 88px;border-radius:2px;background:var(--card-2)}
   .thumb{object-fit:cover;display:block}
@@ -201,6 +216,7 @@
       <button class="add" id="btn-nova">Nova</button>
     </div>
 
+    <div class="faixa-rep" id="faixa-rep"></div>
     <div class="chips" id="chips"></div>
     <div id="lista"></div>
   </div>
@@ -243,8 +259,8 @@
   ];
 
   var tricks = [];
-  var busca = "", filtroCat = "todas", filtroStatus = "todos";
-  var formCats = [], formStatus = "vista", editandoId = null, lendoId = null;
+  var busca = "", filtroCat = "todas", filtroStatus = "todos", soRepertorio = false;
+  var formCats = [], formStatus = "vista", formRep = false, editandoId = null, lendoId = null;
   var promptInstalar = null;
 
   var manobras = [];
@@ -331,12 +347,18 @@
   function visiveis() {
     var q = busca.trim().toLowerCase();
     return tricks.filter(function (t) {
+      if (soRepertorio && !t.repertorio) return false;
       if (filtroStatus !== "todos" && t.status !== filtroStatus) return false;
       if (filtroCat !== "todas" && (t.categorias || []).indexOf(filtroCat) === -1) return false;
       if (!q) return true;
       var alvo = (t.titulo + " " + (t.descricao || "") + " " + (t.categorias || []).join(" ")).toLowerCase();
       return alvo.indexOf(q) !== -1;
-    }).sort(function (a, b) { return (b.criadoEm || 0) - (a.criadoEm || 0); });
+    }).sort(function (a, b) {
+      // o repertório do momento vem sempre primeiro
+      var ra = a.repertorio ? 1 : 0, rb = b.repertorio ? 1 : 0;
+      if (ra !== rb) return rb - ra;
+      return (b.criadoEm || 0) - (a.criadoEm || 0);
+    });
   }
 
   /* ---------- tela principal ---------- */
@@ -351,6 +373,12 @@
         '<span class="l">' + esc(s.label) + "</span></button>";
     }).join("");
 
+    var noRep = 0;
+    tricks.forEach(function (t) { if (t.repertorio) noRep++; });
+    $("faixa-rep").innerHTML = noRep
+      ? '<button id="btn-rep" data-on="' + soRepertorio + '">&#9733; No meu repertório &middot; ' + noRep + "</button>"
+      : "";
+
     $("chips").innerHTML =
       '<button class="chip" data-cat="todas" data-on="' + (filtroCat === "todas") + '">Todas</button>' +
       categorias().map(function (c) {
@@ -361,7 +389,9 @@
     if (!lista.length) {
       $("lista").innerHTML = '<div class="vazio">' + (tricks.length === 0
         ? "Comece pelo último vídeo que te deixou curioso: cole o link, diga do que se trata e marque se já executou."
-        : "Nada com esses filtros. Limpe a busca ou volte pra Todas.") + "</div>";
+        : (soRepertorio
+            ? "Nada no repertório com esses filtros. Toque na estrela de uma mágica para trazê-la pra cá."
+            : "Nada com esses filtros. Limpe a busca ou volte pra Todas.")) + "</div>";
       return;
     }
 
@@ -374,7 +404,11 @@
         ? '<div class="tags">' + t.categorias.map(function (c) { return '<span class="tag">' + esc(c) + "</span>"; }).join("") + "</div>"
         : "";
       var desc = t.descricao ? '<p class="fd">' + esc(resumo(t.descricao)) + "</p>" : "";
-      return '<article class="ficha" data-abrir="' + t.id + '" role="button" tabindex="0">' + thumb +
+      return '<article class="ficha" data-rep="' + (t.repertorio ? "true" : "false") +
+        '" data-abrir="' + t.id + '" role="button" tabindex="0">' + thumb +
+        '<button class="estrela" data-estrela="' + t.id + '" data-on="' + (t.repertorio ? "true" : "false") +
+        '" title="Repertório do momento" aria-label="Marcar como repertório do momento">' +
+        (t.repertorio ? "&#9733;" : "&#9734;") + "</button>" +
         '<div class="corpo"><h3 class="ft">' + esc(t.titulo) + "</h3>" +
         '<button class="st" data-ciclar="' + t.id + '" title="Mudar o status">' +
         '<i style="background:' + s.dot + '"></i>' + esc(s.label) + "</button>" +
@@ -407,6 +441,8 @@
       (vid ? '<img class="capa" alt="" src="https://i.ytimg.com/vi/' + vid + '/hqdefault.jpg">' : "") +
       '<div class="cabeca">' +
       '<button class="st" id="l-status"><i style="background:' + s.dot + '"></i>' + esc(s.label) + "</button>" +
+      '<button class="no-palco" id="l-rep" style="' + (t.repertorio ? "" : "opacity:.45") + '">' +
+      (t.repertorio ? "&#9733; No repertório" : "&#9734; Pôr no repertório") + "</button>" +
       (t.link ? '<a class="botao-video" href="' + esc(t.link) + '" target="_blank" rel="noreferrer">Ver o vídeo</a>' : "") +
       "</div>" +
       ((t.categorias || []).length
@@ -420,6 +456,12 @@
     $("l-x").addEventListener("click", fecharOverlay);
     $("l-fechar").addEventListener("click", fecharOverlay);
     $("l-editar").addEventListener("click", function () { abrirForm(acharTrick(lendoId)); });
+    $("l-rep").addEventListener("click", function () {
+      alternarRep(t.id);
+      var atual = acharTrick(t.id);
+      $("l-rep").innerHTML = atual.repertorio ? "&#9733; No repertório" : "&#9734; Pôr no repertório";
+      $("l-rep").setAttribute("style", atual.repertorio ? "" : "opacity:.45");
+    });
     $("l-status").addEventListener("click", function () {
       ciclar(t.id);
       var novo = statusOf(acharTrick(t.id).status);
@@ -431,6 +473,7 @@
     editandoId = t ? t.id : null;
     formCats = t ? (t.categorias || []).slice() : [];
     formStatus = t ? t.status : "vista";
+    formRep = t ? !!t.repertorio : false;
     var cats = categorias();
     formCats.forEach(function (c) { if (cats.indexOf(c) === -1) cats.push(c); });
 
@@ -447,6 +490,9 @@
       }).join("") +
       '</div><div class="catnova"><input id="f-novacat" placeholder="Criar outra categoria">' +
       '<button id="f-addcat">Criar</button></div></div>' +
+      '<div class="campo"><label>Está no seu repertório agora?</label><div class="op" id="f-rep">' +
+      '<button data-rep="sim" data-on="' + formRep + '">Sim, estou fazendo</button>' +
+      '<button data-rep="nao" data-on="' + (!formRep) + '">Ainda não</button></div></div>' +
       '<div class="campo"><label>Em que ponto você está</label><div class="op" id="f-status">' +
       STATUS.map(function (s) {
         return '<button data-st="' + s.id + '" data-on="' + (formStatus === s.id) + '">' + esc(s.label) + "</button>";
@@ -468,6 +514,13 @@
       var c = b.getAttribute("data-cat"), i = formCats.indexOf(c);
       if (i === -1) formCats.push(c); else formCats.splice(i, 1);
       b.setAttribute("data-on", i === -1);
+    });
+    $("f-rep").addEventListener("click", function (e) {
+      var b = e.target.closest("button[data-rep]"); if (!b) return;
+      formRep = b.getAttribute("data-rep") === "sim";
+      Array.prototype.forEach.call($("f-rep").children, function (x) {
+        x.setAttribute("data-on", (x.getAttribute("data-rep") === "sim") === formRep);
+      });
     });
     $("f-status").addEventListener("click", function (e) {
       var b = e.target.closest("button[data-st]"); if (!b) return;
@@ -518,6 +571,7 @@
         link: $("f-link").value.trim(),
         categorias: formCats.slice(),
         status: formStatus,
+        repertorio: formRep,
         descricao: $("f-desc").value
       };
       var id = editandoId;
@@ -537,6 +591,13 @@
   function voltarOuFechar() {
     var alvo = lendoId ? acharTrick(lendoId) : null;
     if (alvo) abrirLeitura(alvo); else fecharOverlay();
+  }
+
+  function alternarRep(id) {
+    tricks = tricks.map(function (t) {
+      return t.id === id ? Object.assign({}, t, { repertorio: !t.repertorio }) : t;
+    });
+    salvarTudo();
   }
 
   function ciclar(id) {
@@ -772,6 +833,7 @@
         link: i.link || "",
         categorias: Array.isArray(i.categorias) ? i.categorias : [],
         status: st,
+        repertorio: !!i.repertorio,
         descricao: i.descricao || ""
       };
     }
@@ -841,7 +903,14 @@
     filtroCat = (c === "todas" || filtroCat === c) ? "todas" : c;
     render();
   });
+  $("faixa-rep").addEventListener("click", function (e) {
+    if (!e.target.closest("#btn-rep")) return;
+    soRepertorio = !soRepertorio;
+    render();
+  });
   $("lista").addEventListener("click", function (e) {
+    var es = e.target.closest("button[data-estrela]");
+    if (es) { e.stopPropagation(); alternarRep(es.getAttribute("data-estrela")); return; }
     var ci = e.target.closest("button[data-ciclar]");
     if (ci) { e.stopPropagation(); ciclar(ci.getAttribute("data-ciclar")); return; }
     var ab = e.target.closest("[data-abrir]");
