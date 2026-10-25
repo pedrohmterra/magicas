@@ -171,6 +171,18 @@
   ol.passos{padding-left:20px;font-size:13px;color:var(--ink-soft);line-height:1.5;margin:0}
   ol.passos li{margin-bottom:6px}
 
+  /* ---------- foto própria ---------- */
+  .campo-foto{display:flex;gap:11px;align-items:center}
+  .previa{width:92px;height:69px;flex:0 0 92px;border-radius:2px;object-fit:cover;
+    background:var(--card-2);border:1px solid #D8D0BC}
+  .previa-vazia{width:92px;height:69px;flex:0 0 92px;border-radius:2px;background:var(--card-2);
+    border:1px dashed #C9C0AA;display:grid;place-items:center;color:#9C9488;font-size:11px}
+  .acoes-foto{display:flex;flex-direction:column;gap:7px;align-items:flex-start}
+  .btn-foto{border:1px solid #D8D0BC;border-radius:2px;padding:11px 14px;font-size:14px;
+    color:#4A4F4B;background:#fff;cursor:pointer;display:inline-block}
+  .btn-foto input{display:none}
+  .tirar-foto{font-size:13px;color:var(--red);text-decoration:underline;text-underline-offset:2px}
+
   /* ---------- portfólio ---------- */
   .resumo-show{background:var(--felt-2);border:1px solid rgba(247,243,233,.14);border-radius:2px;
     padding:12px 14px;margin-bottom:12px;font-size:13.5px;color:#BDD0CA;line-height:1.5}
@@ -329,6 +341,10 @@
 
   var aba = "magicas";
 
+  var RECADO_CHEIO = "Não deu pra salvar: o espaço do navegador encheu. " +
+    "Fotos ocupam bem mais que texto, então remova a foto de algum registro antigo " +
+    "ou faça um backup e apague o que não usa mais.";
+
   var $ = function (id) { return document.getElementById(id); };
   var esc = function (s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
@@ -348,6 +364,81 @@
     if (!url) return null;
     var m = String(url).match(/(?:youtu\.be\/|[?&]v=|shorts\/|embed\/|live\/)([A-Za-z0-9_-]{11})/);
     return m ? m[1] : null;
+  }
+
+  /* ---------- foto própria ---------- */
+  var LADO_MAX = 560;
+
+  // Encolhe a foto antes de guardar: o armazenamento do navegador é pequeno,
+  // e uma foto de celular inteira ocuparia o espaço de dezenas de registros.
+  function prepararFoto(arquivo, pronto, falhou) {
+    if (!arquivo || !/^image\//.test(arquivo.type)) { falhou("Isso não parece uma imagem."); return; }
+    var leitor = new FileReader();
+    leitor.onerror = function () { falhou("Não consegui ler esse arquivo."); };
+    leitor.onload = function () {
+      var img = new Image();
+      img.onerror = function () { falhou("Não consegui abrir essa imagem."); };
+      img.onload = function () {
+        var escala = Math.min(1, LADO_MAX / Math.max(img.width, img.height));
+        var l = Math.max(1, Math.round(img.width * escala));
+        var a = Math.max(1, Math.round(img.height * escala));
+        var cv = document.createElement("canvas");
+        cv.width = l; cv.height = a;
+        var ctx = cv.getContext("2d");
+        ctx.fillStyle = "#EDE7D8"; ctx.fillRect(0, 0, l, a);
+        ctx.drawImage(img, 0, 0, l, a);
+        try { pronto(cv.toDataURL("image/jpeg", 0.72)); }
+        catch (e) { falhou("Não consegui converter essa imagem."); }
+      };
+      img.src = String(leitor.result || "");
+    };
+    leitor.readAsDataURL(arquivo);
+  }
+
+  // Monta o campo de foto do formulário. Devolve uma função que lê o valor atual.
+  function campoFoto(idBase, valorInicial) {
+    var atual = valorInicial || "";
+    setTimeout(function () {
+      var caixa = $(idBase + "-foto"); if (!caixa) return;
+      function pintar() {
+        caixa.innerHTML =
+          (atual
+            ? '<img class="previa" alt="" src="' + atual + '">'
+            : '<div class="previa-vazia">sem foto</div>') +
+          '<div class="acoes-foto">' +
+          '<label class="btn-foto">' + (atual ? "Trocar foto" : "Escolher foto") +
+          '<input type="file" accept="image/*"></label>' +
+          (atual ? '<button type="button" class="tirar-foto">Remover foto</button>' : "") +
+          "</div>";
+        caixa.querySelector("input").addEventListener("change", function (e) {
+          var f = e.target.files && e.target.files[0];
+          e.target.value = "";
+          if (!f) return;
+          prepararFoto(f, function (dados) { atual = dados; pintar(); },
+            function (erro) { alert(erro); });
+        });
+        var tirar = caixa.querySelector(".tirar-foto");
+        if (tirar) tirar.addEventListener("click", function () { atual = ""; pintar(); });
+      }
+      pintar();
+    }, 0);
+    return function () { return atual; };
+  }
+
+  function htmlCampoFoto(idBase, rotulo) {
+    return '<div class="campo"><label>' + rotulo + "</label>" +
+      '<div class="campo-foto" id="' + idBase + '-foto"></div>' +
+      '<p class="dica">Serve para quando não existe vídeo: uma foto do baralho na mesa ' +
+      "já ajuda a reconhecer o efeito na lista.</p></div>";
+  }
+
+  // A capa segue uma ordem: foto própria, depois o vídeo, e por fim o naipe.
+  function capaHtml(item, classe, tamanhoYT) {
+    if (item.foto) return '<img class="' + classe + '" alt="" src="' + item.foto + '">';
+    var vid = videoId(item.link);
+    if (vid) return '<img class="' + classe + '" alt="" loading="lazy" src="https://i.ytimg.com/vi/' +
+      vid + "/" + (tamanhoYT || "mqdefault") + '.jpg">';
+    return "";
   }
 
   /* ---------- formatação do passo a passo ---------- */
@@ -396,7 +487,7 @@
   }
   function salvarTudo() {
     try { localStorage.setItem(KEY, JSON.stringify(tricks)); }
-    catch (e) { alert("Não deu pra salvar. O armazenamento do navegador pode estar cheio ou bloqueado."); }
+    catch (e) { alert(RECADO_CHEIO); }
     render();
   }
   function categorias() {
@@ -458,10 +549,8 @@
     }
 
     $("lista").innerHTML = lista.map(function (t) {
-      var vid = videoId(t.link), s = statusOf(t.status);
-      var thumb = vid
-        ? '<img class="thumb" alt="" loading="lazy" src="https://i.ytimg.com/vi/' + vid + '/mqdefault.jpg">'
-        : '<div class="thumb-vazia" aria-hidden="true">&spades;</div>';
+      var s = statusOf(t.status);
+      var thumb = capaHtml(t, "thumb") || '<div class="thumb-vazia" aria-hidden="true">&spades;</div>';
       var tags = (t.categorias || []).length
         ? '<div class="tags">' + t.categorias.map(function (c) { return '<span class="tag">' + esc(c) + "</span>"; }).join("") + "</div>"
         : "";
@@ -496,11 +585,11 @@
 
   function abrirLeitura(t) {
     lendoId = t.id;
-    var s = statusOf(t.status), vid = videoId(t.link);
+    var s = statusOf(t.status), vid = videoId(t.link), capa = capaHtml(t, "capa", "hqdefault");
     abrirOverlay(
       '<button class="fechar-x" id="l-x" aria-label="Fechar">&times;</button>' +
       "<h2>" + esc(t.titulo) + "</h2>" +
-      (vid ? '<img class="capa" alt="" src="https://i.ytimg.com/vi/' + vid + '/hqdefault.jpg">' : "") +
+      capa +
       '<div class="cabeca">' +
       '<button class="st" id="l-status"><i style="background:' + s.dot + '"></i>' + esc(s.label) + "</button>" +
       '<button class="no-palco" id="l-rep" style="' + (t.repertorio ? "" : "opacity:.45") + '">' +
@@ -536,6 +625,7 @@
     formCats = t ? (t.categorias || []).slice() : [];
     formStatus = t ? t.status : "vista";
     formRep = t ? !!t.repertorio : false;
+    var lerFoto = campoFoto("f", t ? t.foto : "");
     var cats = categorias();
     formCats.forEach(function (c) { if (cats.indexOf(c) === -1) cats.push(c); });
 
@@ -546,6 +636,7 @@
       '<input id="f-titulo" value="' + esc(t ? t.titulo : "") + '" placeholder="Ex.: Mágica dos 6 montes até 13"></div>' +
       '<div class="campo"><label for="f-link">Link do vídeo</label>' +
       '<input id="f-link" value="' + esc(t ? t.link || "" : "") + '" placeholder="Cole o endereço do YouTube" inputmode="url"></div>' +
+      htmlCampoFoto("f", "Foto da mágica") +
       '<div class="campo"><label>Categorias</label><div class="op" id="f-cats">' +
       cats.map(function (c) {
         return '<button data-cat="' + esc(c) + '" data-on="' + (formCats.indexOf(c) !== -1) + '">' + esc(c) + "</button>";
@@ -631,6 +722,7 @@
       var dados = {
         titulo: titulo,
         link: $("f-link").value.trim(),
+        foto: lerFoto(),
         categorias: formCats.slice(),
         status: formStatus,
         repertorio: formRep,
@@ -697,7 +789,7 @@
     }
     function salvar() {
       try { localStorage.setItem(cfg.chave, JSON.stringify(itens)); }
-      catch (e) { alert("Não deu pra salvar. O armazenamento do navegador pode estar cheio ou bloqueado."); }
+      catch (e) { alert(RECADO_CHEIO); }
       render();
     }
     function visiveis() {
@@ -725,10 +817,8 @@
         return;
       }
       $(cfg.idGrade).innerHTML = lista.map(function (m) {
-        var vid = videoId(m.link), st = mstatusOf(m.status);
-        var capa = vid
-          ? '<img class="capa-m" alt="" loading="lazy" src="https://i.ytimg.com/vi/' + vid + '/mqdefault.jpg">'
-          : '<div class="sem-capa" aria-hidden="true">&spades;</div>';
+        var st = mstatusOf(m.status);
+        var capa = capaHtml(m, "capa-m") || '<div class="sem-capa" aria-hidden="true">&spades;</div>';
         return '<article class="mv" data-editar-m="' + m.id + '" role="button" tabindex="0">' + capa +
           '<div class="mt">' + esc(m.titulo) + '</div><div class="mr">' +
           '<button class="st" data-ciclar-m="' + m.id + '" title="Mudar o status">' +
@@ -749,6 +839,7 @@
     function abrirForm(m) {
       editando = m ? m.id : null;
       formStatus = m ? m.status : "treinando";
+      var lerFoto = campoFoto("m", m ? m.foto : "");
       abrirOverlay(
         '<button class="fechar-x" id="m-x" aria-label="Fechar">&times;</button>' +
         "<h2>" + (m ? cfg.tituloEditar : cfg.tituloNovo) + "</h2>" +
@@ -757,6 +848,7 @@
         '<div class="campo"><label for="m-link">Link do vídeo</label>' +
         '<input id="m-link" value="' + esc(m ? m.link || "" : "") +
         '" placeholder="Cole o endereço do YouTube" inputmode="url"></div>' +
+        htmlCampoFoto("m", "Foto") +
         '<div class="campo"><label>Como está</label><div class="op" id="m-status">' +
         MSTATUS.map(function (st) {
           return '<button data-st="' + st.id + '" data-on="' + (formStatus === st.id) + '">' + esc(st.label) + "</button>";
@@ -782,7 +874,8 @@
       $("m-salvar").addEventListener("click", function () {
         var titulo = $("m-titulo").value.trim();
         if (!titulo) { $("m-titulo").focus(); return; }
-        var dados = { titulo: titulo, link: $("m-link").value.trim(), status: formStatus };
+        var dados = { titulo: titulo, link: $("m-link").value.trim(),
+          foto: lerFoto(), status: formStatus };
         if (editando) {
           var id = editando;
           itens = itens.map(function (x) { return x.id === id ? Object.assign({}, x, dados) : x; });
@@ -864,7 +957,7 @@
   }
   function salvarP() {
     try { localStorage.setItem(PKEY, JSON.stringify(roteiro)); }
-    catch (e) { alert("Não deu pra salvar. O armazenamento do navegador pode estar cheio ou bloqueado."); }
+    catch (e) { alert(RECADO_CHEIO); }
     renderP();
   }
   function acharItem(id) {
@@ -898,10 +991,7 @@
     }
 
     $("roteiro").innerHTML = roteiro.map(function (it, i) {
-      var vid = videoId(it.link);
-      var capa = vid
-        ? '<img class="mini" alt="" loading="lazy" src="https://i.ytimg.com/vi/' + vid + '/mqdefault.jpg">'
-        : '<div class="mini-vazia" aria-hidden="true">&spades;</div>';
+      var capa = capaHtml(it, "mini") || '<div class="mini-vazia" aria-hidden="true">&spades;</div>';
       var resumoTxt = it.descricao ? '<p class="ir">' + esc(resumo(it.descricao)) + "</p>" : "";
       var selo = it.origemId && acharTrick(it.origemId)
         ? '<span class="selo-origem">Do caderno de mágicas</span>' : "";
@@ -922,12 +1012,12 @@
   }
 
   function abrirItem(it) {
-    var vid = videoId(it.link);
     var origem = it.origemId ? acharTrick(it.origemId) : null;
+    var capa = capaHtml(it, "capa", "hqdefault");
     abrirOverlay(
       '<button class="fechar-x" id="p-x" aria-label="Fechar">&times;</button>' +
       "<h2>" + (posicao(it.id) + 1) + ". " + esc(it.titulo) + "</h2>" +
-      (vid ? '<img class="capa" alt="" src="https://i.ytimg.com/vi/' + vid + '/hqdefault.jpg">' : "") +
+      capa +
       (it.link
         ? '<div class="cabeca"><a class="botao-video" href="' + esc(it.link) +
           '" target="_blank" rel="noreferrer">Ver o vídeo</a></div>'
@@ -951,6 +1041,7 @@
 
   function abrirFormItem(it) {
     var editando = it ? it.id : null;
+    var lerFoto = campoFoto("p", it ? it.foto : "");
     abrirOverlay(
       '<button class="fechar-x" id="p-fx" aria-label="Fechar">&times;</button>' +
       "<h2>" + (it ? "Editar número" : "Novo número") + "</h2>" +
@@ -959,6 +1050,7 @@
       '<div class="campo"><label for="p-link">Link do vídeo</label>' +
       '<input id="p-link" value="' + esc(it ? it.link || "" : "") +
       '" placeholder="Cole o endereço do YouTube" inputmode="url"></div>' +
+      htmlCampoFoto("p", "Foto do número") +
       '<div class="campo"><label for="p-desc">Como fazer e lembretes</label>' +
       '<textarea id="p-desc" placeholder="O efeito, a deixa para entrar, o que falar…">' +
       esc(it ? it.descricao || "" : "") + "</textarea></div>" +
@@ -977,7 +1069,8 @@
     $("p-salvar").addEventListener("click", function () {
       var titulo = $("p-titulo").value.trim();
       if (!titulo) { $("p-titulo").focus(); return; }
-      var dados = { titulo: titulo, link: $("p-link").value.trim(), descricao: $("p-desc").value };
+      var dados = { titulo: titulo, link: $("p-link").value.trim(),
+        foto: lerFoto(), descricao: $("p-desc").value };
       var id = editando;
       if (id) {
         roteiro = roteiro.map(function (x) { return x.id === id ? Object.assign({}, x, dados) : x; });
@@ -1040,10 +1133,7 @@
         return;
       }
       $("c-lista").innerHTML = achadas.map(function (t) {
-        var vid = videoId(t.link);
-        var capa = vid
-          ? '<img class="mini" alt="" loading="lazy" src="https://i.ytimg.com/vi/' + vid + '/mqdefault.jpg">'
-          : '<div class="mini-vazia" aria-hidden="true">&spades;</div>';
+        var capa = capaHtml(t, "mini") || '<div class="mini-vazia" aria-hidden="true">&spades;</div>';
         var jaTem = roteiro.some(function (r) { return r.origemId === t.id; });
         return '<button data-pega="' + t.id + '">' + capa +
           '<span style="min-width:0"><span class="nome">' + esc(t.titulo) + "</span>" +
@@ -1059,7 +1149,7 @@
       var t = acharTrick(b.getAttribute("data-pega")); if (!t) return;
       var id = uid();
       roteiro.push({ id: id, criadoEm: Date.now(), origemId: t.id, titulo: t.titulo,
-        link: t.link || "", descricao: t.descricao || "" });
+        link: t.link || "", foto: t.foto || "", descricao: t.descricao || "" });
       salvarP();
       abrirItem(acharItem(id));
     });
@@ -1107,6 +1197,10 @@
       " manobras, " + secCardistry.lista().length + " movimentos de cardistry e " +
       roteiro.length + " números no show. " +
       "Os dados ficam só neste aparelho, então vale baixar o arquivo de vez em quando.</p>" +
+      (json.length > 400000
+        ? '<p class="txt"><b>Com as fotos, este backup ficou grande (' + Math.round(json.length / 1024) +
+          " KB).</b> Use Baixar arquivo; copiar como texto não vai caber numa mensagem.</p>"
+        : "") +
       '<div class="linha-b"><button class="btn-escuro" id="b-baixar">Baixar arquivo</button>' +
       '<button class="btn-claro" id="b-copiar">Copiar texto</button>' +
       '<button class="btn-claro" id="b-enviar" hidden>Enviar</button></div>' +
@@ -1184,6 +1278,7 @@
         link: i.link || "",
         categorias: Array.isArray(i.categorias) ? i.categorias : [],
         status: st,
+        foto: i.foto || "",
         repertorio: !!i.repertorio,
         descricao: i.descricao || ""
       };
@@ -1196,6 +1291,7 @@
         criadoEm: i.criadoEm || Date.now(),
         titulo: String(i.titulo || "").trim(),
         link: i.link || "",
+        foto: i.foto || "",
         status: st
       };
     }
@@ -1220,6 +1316,7 @@
           origemId: i.origemId || null,
           titulo: String(i.titulo || "").trim(),
           link: i.link || "",
+          foto: i.foto || "",
           descricao: i.descricao || ""
         };
       });
