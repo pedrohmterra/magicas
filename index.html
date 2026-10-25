@@ -171,10 +171,51 @@
   ol.passos{padding-left:20px;font-size:13px;color:var(--ink-soft);line-height:1.5;margin:0}
   ol.passos li{margin-bottom:6px}
 
+  /* ---------- portfólio ---------- */
+  .resumo-show{background:var(--felt-2);border:1px solid rgba(247,243,233,.14);border-radius:2px;
+    padding:12px 14px;margin-bottom:12px;font-size:13.5px;color:#BDD0CA;line-height:1.5}
+  .resumo-show b{color:var(--card);font-weight:700}
+  .add-largo{flex:1;text-align:center;padding:14px 18px}
+
+  .num-item{background:var(--card);color:var(--ink);border-radius:3px;margin-bottom:10px;
+    box-shadow:0 1px 0 rgba(0,0,0,.25);display:flex;align-items:stretch;overflow:hidden}
+  .ordem{flex:0 0 44px;background:var(--card-2);display:flex;flex-direction:column;
+    align-items:center;justify-content:space-between;padding:6px 0}
+  .ordem .pos{font-family:'Bodoni Moda',serif;font-size:20px;line-height:1;color:#6E7A74;
+    padding:4px 0}
+  .ordem button{width:40px;height:34px;display:grid;place-items:center;font-size:15px;
+    color:#5C6560;border-radius:2px}
+  .ordem button:disabled{opacity:.25}
+  .ordem button:active:not(:disabled){background:#DFD7C3}
+  .corpo-item{flex:1;min-width:0;padding:12px;display:flex;gap:11px;align-items:flex-start;
+    text-align:left;cursor:pointer;background:none;border:none;color:inherit;width:100%}
+  .corpo-item:active{background:#F1ECDF}
+  .mini{width:76px;height:57px;flex:0 0 76px;border-radius:2px;object-fit:cover;background:var(--card-2)}
+  .mini-vazia{width:76px;height:57px;flex:0 0 76px;border-radius:2px;background:var(--card-2);
+    display:grid;place-items:center;color:#B3A98F;font-size:20px;font-family:'Bodoni Moda',serif}
+  .it{font-weight:700;font-size:15px;line-height:1.25;margin:0 0 5px;color:var(--ink)}
+  .ir{font-size:12.5px;color:var(--ink-soft);line-height:1.4;margin:0;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .selo-origem{display:inline-block;font-size:11px;background:var(--card-2);color:#6B7570;
+    padding:3px 7px;border-radius:2px;margin-top:6px}
+
+  .escolha{display:flex;flex-direction:column;gap:9px;margin-bottom:4px}
+  .escolha button{border:1px solid #D8D0BC;border-radius:2px;padding:15px 14px;text-align:left;
+    font-size:15px;font-weight:700;color:var(--ink);background:#fff}
+  .escolha span{display:block;font-weight:400;font-size:13px;color:var(--ink-soft);margin-top:3px}
+  .lista-origem{margin-top:4px}
+  .lista-origem button{width:100%;text-align:left;border:1px solid #E2DAC7;border-radius:2px;
+    padding:12px;margin-bottom:7px;background:#fff;display:flex;gap:10px;align-items:center}
+  .lista-origem .mini,.lista-origem .mini-vazia{width:58px;height:44px;flex:0 0 58px}
+  .lista-origem .nome{font-weight:700;font-size:14px;color:var(--ink);line-height:1.25}
+  .lista-origem .ja{font-size:11.5px;color:var(--red);margin-top:3px;display:block}
+
   /* ---------- abas ---------- */
-  .abas{display:flex;gap:4px;margin:0 0 18px;background:var(--felt-2);padding:4px;
-    border-radius:3px;border:1px solid rgba(247,243,233,.12)}
-  .abas button{flex:1;padding:12px 4px;border-radius:2px;font-size:13.5px;color:#9DB3AC;
+  .abas{display:flex;gap:3px;margin:0 0 18px;background:var(--felt-2);padding:4px;
+    border-radius:3px;border:1px solid rgba(247,243,233,.12);overflow-x:auto;
+    scrollbar-width:none}
+  .abas::-webkit-scrollbar{display:none}
+  .abas button{flex:1 0 auto;padding:12px 10px;border-radius:2px;font-size:13px;color:#9DB3AC;
     font-weight:500;white-space:nowrap}
   .abas button[data-on="true"]{background:var(--card);color:var(--ink);font-weight:700}
 
@@ -208,6 +249,7 @@
     <button data-aba="magicas" data-on="true">Mágicas</button>
     <button data-aba="manobras" data-on="false">Manobras</button>
     <button data-aba="cardistry" data-on="false">Cardistry</button>
+    <button data-aba="portfolio" data-on="false">Portfólio</button>
   </div>
 
   <div id="vista-magicas">
@@ -243,6 +285,16 @@
     </div>
 
     <div id="grade-c" class="grade"></div>
+  </div>
+
+  <div id="vista-portfolio" hidden>
+    <div class="resumo-show" id="resumo-show"></div>
+
+    <div class="barra">
+      <button class="add add-largo" id="btn-add-port">Adicionar número</button>
+    </div>
+
+    <div id="roteiro"></div>
   </div>
 
   <div class="rodape-app">
@@ -799,10 +851,226 @@
     vazio: "Guarde aqui os floreios que você quer dominar: cortes, fans, aberturas na mão."
   });
 
+  /* ---------- portfólio: a sequência do show ---------- */
+  var PKEY = "portfolio:v1";
+  var roteiro = [];
+
+  function carregarP() {
+    try {
+      var raw = localStorage.getItem(PKEY);
+      roteiro = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(roteiro)) roteiro = [];
+    } catch (e) { roteiro = []; }
+  }
+  function salvarP() {
+    try { localStorage.setItem(PKEY, JSON.stringify(roteiro)); }
+    catch (e) { alert("Não deu pra salvar. O armazenamento do navegador pode estar cheio ou bloqueado."); }
+    renderP();
+  }
+  function acharItem(id) {
+    for (var i = 0; i < roteiro.length; i++) if (roteiro[i].id === id) return roteiro[i];
+    return null;
+  }
+  function posicao(id) {
+    for (var i = 0; i < roteiro.length; i++) if (roteiro[i].id === id) return i;
+    return -1;
+  }
+  function mover(id, passo) {
+    var i = posicao(id), j = i + passo;
+    if (i < 0 || j < 0 || j >= roteiro.length) return;
+    var copia = roteiro.slice();
+    var tmp = copia[i]; copia[i] = copia[j]; copia[j] = tmp;
+    roteiro = copia;
+    salvarP();
+  }
+
+  function renderP() {
+    $("resumo-show").innerHTML = roteiro.length
+      ? "O show tem <b>" + roteiro.length + (roteiro.length === 1 ? " número</b>." : " números</b>.") +
+        " As setas mudam a ordem; toque no cartão para ver os detalhes."
+      : "Monte aqui a ordem do seu show. Você pode trazer mágicas que já estão no caderno " +
+        "ou criar um número que só existe no palco.";
+
+    if (!roteiro.length) {
+      $("roteiro").innerHTML = '<div class="vazio">Nada no roteiro ainda. ' +
+        "Toque em Adicionar número para começar pelo primeiro efeito.</div>";
+      return;
+    }
+
+    $("roteiro").innerHTML = roteiro.map(function (it, i) {
+      var vid = videoId(it.link);
+      var capa = vid
+        ? '<img class="mini" alt="" loading="lazy" src="https://i.ytimg.com/vi/' + vid + '/mqdefault.jpg">'
+        : '<div class="mini-vazia" aria-hidden="true">&spades;</div>';
+      var resumoTxt = it.descricao ? '<p class="ir">' + esc(resumo(it.descricao)) + "</p>" : "";
+      var selo = it.origemId && acharTrick(it.origemId)
+        ? '<span class="selo-origem">Do caderno de mágicas</span>' : "";
+      return '<article class="num-item">' +
+        '<div class="ordem">' +
+        '<button data-sobe="' + it.id + '" aria-label="Subir na ordem"' +
+        (i === 0 ? " disabled" : "") + ">&#9650;</button>" +
+        '<span class="pos">' + (i + 1) + "</span>" +
+        '<button data-desce="' + it.id + '" aria-label="Descer na ordem"' +
+        (i === roteiro.length - 1 ? " disabled" : "") + ">&#9660;</button>" +
+        "</div>" +
+        '<button class="corpo-item" data-ver="' + it.id + '">' + capa +
+        '<span style="min-width:0;flex:1">' +
+        '<span class="it">' + esc(it.titulo) + "</span>" +
+        resumoTxt + selo + "</span></button>" +
+        "</article>";
+    }).join("");
+  }
+
+  function abrirItem(it) {
+    var vid = videoId(it.link);
+    var origem = it.origemId ? acharTrick(it.origemId) : null;
+    abrirOverlay(
+      '<button class="fechar-x" id="p-x" aria-label="Fechar">&times;</button>' +
+      "<h2>" + (posicao(it.id) + 1) + ". " + esc(it.titulo) + "</h2>" +
+      (vid ? '<img class="capa" alt="" src="https://i.ytimg.com/vi/' + vid + '/hqdefault.jpg">' : "") +
+      (it.link
+        ? '<div class="cabeca"><a class="botao-video" href="' + esc(it.link) +
+          '" target="_blank" rel="noreferrer">Ver o vídeo</a></div>'
+        : "") +
+      '<div class="leitura">' + formatar(it.descricao) + "</div>" +
+      (origem ? '<p class="dica">Veio de “' + esc(origem.titulo) +
+        '” no caderno de mágicas. Editar aqui não muda a mágica original.</p>' : "") +
+      '<div class="acoes-fixas"><button class="salvar" id="p-editar">Editar</button>' +
+      '<button class="cancelar" id="p-fechar">Fechar</button>' +
+      '<button class="apagar" id="p-tirar">Tirar do show</button></div>'
+    );
+    $("p-x").addEventListener("click", fecharOverlay);
+    $("p-fechar").addEventListener("click", fecharOverlay);
+    $("p-editar").addEventListener("click", function () { abrirFormItem(acharItem(it.id)); });
+    $("p-tirar").addEventListener("click", function () {
+      if (!confirm("Tirar este número do show? A mágica continua no caderno.")) return;
+      roteiro = roteiro.filter(function (x) { return x.id !== it.id; });
+      fecharOverlay(); salvarP();
+    });
+  }
+
+  function abrirFormItem(it) {
+    var editando = it ? it.id : null;
+    abrirOverlay(
+      '<button class="fechar-x" id="p-fx" aria-label="Fechar">&times;</button>' +
+      "<h2>" + (it ? "Editar número" : "Novo número") + "</h2>" +
+      '<div class="campo"><label for="p-titulo">Nome do número</label>' +
+      '<input id="p-titulo" value="' + esc(it ? it.titulo : "") + '" placeholder="Ex.: Abertura com as quatro damas"></div>' +
+      '<div class="campo"><label for="p-link">Link do vídeo</label>' +
+      '<input id="p-link" value="' + esc(it ? it.link || "" : "") +
+      '" placeholder="Cole o endereço do YouTube" inputmode="url"></div>' +
+      '<div class="campo"><label for="p-desc">Como fazer e lembretes</label>' +
+      '<textarea id="p-desc" placeholder="O efeito, a deixa para entrar, o que falar…">' +
+      esc(it ? it.descricao || "" : "") + "</textarea></div>" +
+      '<div class="acoes-fixas"><button class="salvar" id="p-salvar">' +
+      (it ? "Salvar" : "Pôr no show") + "</button>" +
+      '<button class="cancelar" id="p-cancelar">Cancelar</button></div>'
+    );
+    var cx = $("p-desc");
+    function crescer() { cx.style.height = "auto"; cx.style.height = cx.scrollHeight + 2 + "px"; }
+    cx.addEventListener("input", crescer);
+    setTimeout(crescer, 0);
+
+    function sair() { if (it) abrirItem(acharItem(it.id) || it); else fecharOverlay(); }
+    $("p-fx").addEventListener("click", sair);
+    $("p-cancelar").addEventListener("click", sair);
+    $("p-salvar").addEventListener("click", function () {
+      var titulo = $("p-titulo").value.trim();
+      if (!titulo) { $("p-titulo").focus(); return; }
+      var dados = { titulo: titulo, link: $("p-link").value.trim(), descricao: $("p-desc").value };
+      var id = editando;
+      if (id) {
+        roteiro = roteiro.map(function (x) { return x.id === id ? Object.assign({}, x, dados) : x; });
+      } else {
+        id = uid();
+        roteiro.push(Object.assign({ id: id, criadoEm: Date.now() }, dados));
+      }
+      salvarP();
+      abrirItem(acharItem(id));
+    });
+    if (!it) $("p-titulo").focus();
+  }
+
+  function abrirEscolha() {
+    abrirOverlay(
+      '<button class="fechar-x" id="e-x" aria-label="Fechar">&times;</button>' +
+      "<h2>Adicionar ao show</h2>" +
+      '<div class="escolha">' +
+      '<button id="e-caderno">Trazer do caderno de mágicas' +
+      "<span>Escolha uma das mágicas que você já guardou.</span></button>" +
+      '<button id="e-nova">Criar um número novo' +
+      "<span>Para o que ainda não está no caderno.</span></button></div>" +
+      '<div class="acoes-fixas"><button class="cancelar" id="e-fechar">Cancelar</button></div>'
+    );
+    $("e-x").addEventListener("click", fecharOverlay);
+    $("e-fechar").addEventListener("click", fecharOverlay);
+    $("e-nova").addEventListener("click", function () { abrirFormItem(null); });
+    $("e-caderno").addEventListener("click", abrirEscolhaCaderno);
+  }
+
+  function abrirEscolhaCaderno() {
+    if (!tricks.length) {
+      abrirOverlay(
+        '<button class="fechar-x" id="c-x" aria-label="Fechar">&times;</button>' +
+        "<h2>Trazer do caderno</h2>" +
+        '<p class="txt">Seu caderno de mágicas ainda está vazio. ' +
+        "Cadastre uma mágica na aba Mágicas ou crie um número novo aqui mesmo.</p>" +
+        '<div class="acoes-fixas"><button class="salvar" id="c-nova">Criar número novo</button>' +
+        '<button class="cancelar" id="c-fechar">Fechar</button></div>'
+      );
+      $("c-x").addEventListener("click", fecharOverlay);
+      $("c-fechar").addEventListener("click", fecharOverlay);
+      $("c-nova").addEventListener("click", function () { abrirFormItem(null); });
+      return;
+    }
+    abrirOverlay(
+      '<button class="fechar-x" id="c-x" aria-label="Fechar">&times;</button>' +
+      "<h2>Trazer do caderno</h2>" +
+      '<div class="campo"><input id="c-busca" placeholder="Buscar mágica" autocomplete="off"></div>' +
+      '<div class="lista-origem" id="c-lista"></div>' +
+      '<div class="acoes-fixas"><button class="cancelar" id="c-fechar">Cancelar</button></div>'
+    );
+    function pintar() {
+      var q = $("c-busca").value.trim().toLowerCase();
+      var achadas = tricks.filter(function (t) {
+        return !q || t.titulo.toLowerCase().indexOf(q) !== -1;
+      });
+      if (!achadas.length) {
+        $("c-lista").innerHTML = '<p class="txt">Nenhuma mágica com esse nome.</p>';
+        return;
+      }
+      $("c-lista").innerHTML = achadas.map(function (t) {
+        var vid = videoId(t.link);
+        var capa = vid
+          ? '<img class="mini" alt="" loading="lazy" src="https://i.ytimg.com/vi/' + vid + '/mqdefault.jpg">'
+          : '<div class="mini-vazia" aria-hidden="true">&spades;</div>';
+        var jaTem = roteiro.some(function (r) { return r.origemId === t.id; });
+        return '<button data-pega="' + t.id + '">' + capa +
+          '<span style="min-width:0"><span class="nome">' + esc(t.titulo) + "</span>" +
+          (jaTem ? '<span class="ja">Já está no show</span>' : "") + "</span></button>";
+      }).join("");
+    }
+    pintar();
+    $("c-busca").addEventListener("input", pintar);
+    $("c-x").addEventListener("click", fecharOverlay);
+    $("c-fechar").addEventListener("click", fecharOverlay);
+    $("c-lista").addEventListener("click", function (e) {
+      var b = e.target.closest("button[data-pega]"); if (!b) return;
+      var t = acharTrick(b.getAttribute("data-pega")); if (!t) return;
+      var id = uid();
+      roteiro.push({ id: id, criadoEm: Date.now(), origemId: t.id, titulo: t.titulo,
+        link: t.link || "", descricao: t.descricao || "" });
+      salvarP();
+      abrirItem(acharItem(id));
+    });
+    $("c-busca").focus();
+  }
+
   var SUBTITULOS = {
     magicas: "Tudo que você viu, estudou e já levou pra mesa — com o vídeo de origem junto.",
     manobras: "Só as manobras: o vídeo e se você já faz ou ainda está treinando.",
-    cardistry: "Os floreios: malabarismo com as cartas, pelo prazer de ver a mão trabalhar."
+    cardistry: "Os floreios: malabarismo com as cartas, pelo prazer de ver a mão trabalhar.",
+    portfolio: "A ordem do show: o que entra primeiro, o que fecha, e o que dizer no meio."
   };
 
   function trocarAba(nome) {
@@ -814,13 +1082,15 @@
     $("vista-magicas").hidden = aba !== "magicas";
     $("vista-manobras").hidden = aba !== "manobras";
     $("vista-cardistry").hidden = aba !== "cardistry";
+    $("vista-portfolio").hidden = aba !== "portfolio";
     $("sub").textContent = SUBTITULOS[aba];
     window.scrollTo(0, 0);
   }
 
   function abrirBackup() {
-    var json = JSON.stringify({ versao: 3, magicas: tricks,
-      manobras: secManobras.lista(), cardistry: secCardistry.lista() }, null, 2);
+    var json = JSON.stringify({ versao: 4, magicas: tricks,
+      manobras: secManobras.lista(), cardistry: secCardistry.lista(),
+      portfolio: roteiro }, null, 2);
     var iosLike = /iPad|iPhone|iPod/.test(navigator.userAgent);
     abrirOverlay(
       '<button class="fechar-x" id="b-x" aria-label="Fechar">&times;</button>' +
@@ -834,7 +1104,8 @@
       "</ol>" +
       '<div class="bloco"><h3>Guardar uma cópia</h3>' +
       '<p class="txt">' + tricks.length + " mágicas, " + secManobras.lista().length +
-      " manobras e " + secCardistry.lista().length + " movimentos de cardistry. " +
+      " manobras, " + secCardistry.lista().length + " movimentos de cardistry e " +
+      roteiro.length + " números no show. " +
       "Os dados ficam só neste aparelho, então vale baixar o arquivo de vez em quando.</p>" +
       '<div class="linha-b"><button class="btn-escuro" id="b-baixar">Baixar arquivo</button>' +
       '<button class="btn-claro" id="b-copiar">Copiar texto</button>' +
@@ -938,29 +1209,46 @@
       var brutoMag = Array.isArray(dados) ? dados : (dados && Array.isArray(dados.magicas) ? dados.magicas : []);
       var brutoMan = (dados && Array.isArray(dados.manobras)) ? dados.manobras : [];
       var brutoCar = (dados && Array.isArray(dados.cardistry)) ? dados.cardistry : [];
+      var brutoPort = (dados && Array.isArray(dados.portfolio)) ? dados.portfolio : [];
       var lidas = brutoMag.filter(function (d) { return d && d.titulo; }).map(normalizar);
       var lidasM = brutoMan.filter(function (d) { return d && d.titulo; }).map(normalizarM);
       var lidasC = brutoCar.filter(function (d) { return d && d.titulo; }).map(normalizarM);
-      if (!lidas.length && !lidasM.length && !lidasC.length) {
-        msg("Nenhuma mágica, manobra ou movimento encontrado nesse arquivo."); return;
+      var lidasP = brutoPort.filter(function (d) { return d && d.titulo; }).map(function (i) {
+        return {
+          id: i.id || uid(),
+          criadoEm: i.criadoEm || Date.now(),
+          origemId: i.origemId || null,
+          titulo: String(i.titulo || "").trim(),
+          link: i.link || "",
+          descricao: i.descricao || ""
+        };
+      });
+      if (!lidas.length && !lidasM.length && !lidasC.length && !lidasP.length) {
+        msg("Nenhuma mágica, manobra ou número encontrado nesse arquivo."); return;
       }
 
       if (modo === "substituir") {
         if (!confirm("Isso apaga as " + tricks.length + " mágicas, " + secManobras.lista().length +
-          " manobras e " + secCardistry.lista().length + " movimentos atuais. Continuar?")) return;
+          " manobras, " + secCardistry.lista().length + " movimentos e o show com " +
+          roteiro.length + " números. Continuar?")) return;
         tricks = lidas;
         secManobras.definir(lidasM);
         secCardistry.definir(lidasC);
-        msg("Substituído: " + lidas.length + " mágicas, " + lidasM.length + " manobras e " +
-          lidasC.length + " movimentos.");
+        roteiro = lidasP; salvarP();
+        msg("Substituído: " + lidas.length + " mágicas, " + lidasM.length + " manobras, " +
+          lidasC.length + " movimentos e " + lidasP.length + " números no show.");
       } else {
         var ids = tricks.map(function (t) { return t.id; });
         var novas = lidas.filter(function (l) { return ids.indexOf(l.id) === -1; });
         tricks = novas.concat(tricks);
         var novasM = secManobras.juntar(lidasM);
         var novasC = secCardistry.juntar(lidasC);
-        msg((novas.length + novasM + novasC)
-          ? novas.length + " mágicas, " + novasM + " manobras e " + novasC + " movimentos adicionados."
+        var idsP = roteiro.map(function (r) { return r.id; });
+        var novosP = lidasP.filter(function (l) { return idsP.indexOf(l.id) === -1; });
+        roteiro = roteiro.concat(novosP); salvarP();
+        msg((novas.length + novasM + novasC + novosP.length)
+          ? novas.length + " mágicas, " + novasM + " manobras, " + novasC + " movimentos e " +
+            novosP.length + " números adicionados."
           : "Nada novo: tudo já estava no caderno.");
       }
       $("b-cola").value = "";
@@ -1011,6 +1299,15 @@
     var b = e.target.closest("button[data-aba]"); if (!b) return;
     trocarAba(b.getAttribute("data-aba"));
   });
+  $("btn-add-port").addEventListener("click", abrirEscolha);
+  $("roteiro").addEventListener("click", function (e) {
+    var sobe = e.target.closest("button[data-sobe]");
+    if (sobe) { mover(sobe.getAttribute("data-sobe"), -1); return; }
+    var desce = e.target.closest("button[data-desce]");
+    if (desce) { mover(desce.getAttribute("data-desce"), 1); return; }
+    var ver = e.target.closest("button[data-ver]");
+    if (ver) { var it = acharItem(ver.getAttribute("data-ver")); if (it) abrirItem(it); }
+  });
   $("overlay").addEventListener("click", function (e) { if (e.target === $("overlay")) fecharOverlay(); });
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && $("overlay").classList.contains("on")) fecharOverlay();
@@ -1042,6 +1339,7 @@
   render();
   secManobras.carregar(); secManobras.render();
   secCardistry.carregar(); secCardistry.render();
+  carregarP(); renderP();
   var salva = "magicas";
   try { salva = localStorage.getItem("caderno:aba") || "magicas"; } catch (e) {}
   trocarAba(salva);
