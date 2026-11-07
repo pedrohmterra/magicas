@@ -184,6 +184,25 @@
   .tirar-foto{font-size:13px;color:var(--red);text-decoration:underline;text-underline-offset:2px}
 
   /* ---------- portfólio ---------- */
+  .notas{background:var(--card);color:var(--ink);border-radius:3px;margin-bottom:12px;
+    box-shadow:0 1px 0 rgba(0,0,0,.25);overflow:hidden}
+  .notas-topo{display:flex;align-items:center;gap:10px;width:100%;padding:13px 14px;
+    background:none;border:none;text-align:left;cursor:pointer;color:inherit}
+  .notas-topo:active{background:#F1ECDF}
+  .notas-titulo{font-weight:700;font-size:14.5px;color:var(--ink);flex:0 0 auto}
+  .notas-previa{flex:1;min-width:0;font-size:13px;color:var(--ink-soft);white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+  .notas-seta{flex:0 0 auto;font-size:12px;color:#8A908B;transition:transform .15s}
+  .notas[data-aberto="true"] .notas-seta{transform:rotate(180deg)}
+  .notas-corpo{padding:0 14px 12px}
+  #notas-texto{background:#FFFDF8;border:1px solid #D8D0BC;border-radius:2px;padding:12px;
+    color:var(--ink);font-size:16px;line-height:1.55;min-height:132px;resize:vertical;
+    display:block;width:100%}
+  .notas-pe{display:flex;justify-content:space-between;align-items:center;gap:10px;
+    margin-top:8px;min-height:20px}
+  .notas-estado{font-size:12px;color:#7A807B}
+  .notas-limpar{font-size:12.5px;color:var(--red);text-decoration:underline;text-underline-offset:2px}
+
   .resumo-show{background:var(--felt-2);border:1px solid rgba(247,243,233,.14);border-radius:2px;
     padding:12px 14px;margin-bottom:12px;font-size:13.5px;color:#BDD0CA;line-height:1.5}
   .resumo-show b{color:var(--card);font-weight:700}
@@ -300,6 +319,21 @@
   </div>
 
   <div id="vista-portfolio" hidden>
+    <section class="notas" id="notas" data-aberto="false">
+      <button class="notas-topo" id="notas-topo" aria-expanded="false" aria-controls="notas-corpo">
+        <span class="notas-titulo">Próximos passos</span>
+        <span class="notas-previa" id="notas-previa"></span>
+        <span class="notas-seta" aria-hidden="true">&#9660;</span>
+      </button>
+      <div class="notas-corpo" id="notas-corpo" hidden>
+        <textarea id="notas-texto" placeholder="Mágicas para procurar, o que treinar essa semana, ideias soltas…"></textarea>
+        <div class="notas-pe">
+          <span class="notas-estado" id="notas-estado"></span>
+          <button class="notas-limpar" id="notas-limpar" hidden>Apagar tudo</button>
+        </div>
+      </div>
+    </section>
+
     <div class="resumo-show" id="resumo-show"></div>
 
     <div class="barra">
@@ -944,6 +978,75 @@
     vazio: "Guarde aqui os floreios que você quer dominar: cortes, fans, aberturas na mão."
   });
 
+  /* ---------- bloco de notas do portfólio ---------- */
+  var NKEY = "portfolio:notas";
+  var NABERTO = "portfolio:notas-aberto";
+  var relogioNotas = null;
+
+  function lerNotas() {
+    try { return localStorage.getItem(NKEY) || ""; } catch (e) { return ""; }
+  }
+  function previaNotas() {
+    var t = lerNotas().split("\n");
+    for (var i = 0; i < t.length; i++) {
+      if (t[i].trim()) return t[i].trim();
+    }
+    return "";
+  }
+  function pintarPrevia() {
+    var pr = previaNotas();
+    $("notas-previa").textContent = pr || "nada anotado ainda";
+    $("notas-limpar").hidden = !lerNotas().trim();
+  }
+  function abrirNotas(abrir) {
+    $("notas").setAttribute("data-aberto", abrir ? "true" : "false");
+    $("notas-corpo").hidden = !abrir;
+    $("notas-topo").setAttribute("aria-expanded", abrir ? "true" : "false");
+    try { localStorage.setItem(NABERTO, abrir ? "1" : "0"); } catch (e) {}
+    if (abrir) crescerNotas();
+  }
+  function crescerNotas() {
+    var c = $("notas-texto");
+    c.style.height = "auto";
+    c.style.height = Math.max(132, c.scrollHeight + 2) + "px";
+  }
+  function gravarNotas() {
+    try {
+      localStorage.setItem(NKEY, $("notas-texto").value);
+      $("notas-estado").textContent = "Salvo";
+    } catch (e) {
+      $("notas-estado").textContent = "Não deu pra salvar: o espaço do navegador encheu.";
+    }
+    pintarPrevia();
+  }
+  function iniciarNotas() {
+    $("notas-texto").value = lerNotas();
+    pintarPrevia();
+    var aberto = false;
+    try { aberto = localStorage.getItem(NABERTO) === "1"; } catch (e) {}
+    abrirNotas(aberto);
+
+    $("notas-topo").addEventListener("click", function () {
+      abrirNotas($("notas").getAttribute("data-aberto") !== "true");
+    });
+    $("notas-texto").addEventListener("input", function () {
+      crescerNotas();
+      $("notas-estado").textContent = "Escrevendo…";
+      if (relogioNotas) clearTimeout(relogioNotas);
+      relogioNotas = setTimeout(gravarNotas, 500);
+    });
+    // se sair da página antes do meio segundo, não perde o que foi digitado
+    $("notas-texto").addEventListener("blur", gravarNotas);
+    window.addEventListener("pagehide", gravarNotas);
+    $("notas-limpar").addEventListener("click", function () {
+      if (!confirm("Apagar tudo que está anotado aqui?")) return;
+      $("notas-texto").value = "";
+      gravarNotas();
+      crescerNotas();
+      $("notas-texto").focus();
+    });
+  }
+
   /* ---------- portfólio: a sequência do show ---------- */
   var PKEY = "portfolio:v1";
   var roteiro = [];
@@ -1178,9 +1281,9 @@
   }
 
   function abrirBackup() {
-    var json = JSON.stringify({ versao: 4, magicas: tricks,
+    var json = JSON.stringify({ versao: 5, magicas: tricks,
       manobras: secManobras.lista(), cardistry: secCardistry.lista(),
-      portfolio: roteiro }, null, 2);
+      portfolio: roteiro, notas: lerNotas() }, null, 2);
     var iosLike = /iPad|iPhone|iPod/.test(navigator.userAgent);
     abrirOverlay(
       '<button class="fechar-x" id="b-x" aria-label="Fechar">&times;</button>' +
@@ -1306,6 +1409,7 @@
       var brutoMan = (dados && Array.isArray(dados.manobras)) ? dados.manobras : [];
       var brutoCar = (dados && Array.isArray(dados.cardistry)) ? dados.cardistry : [];
       var brutoPort = (dados && Array.isArray(dados.portfolio)) ? dados.portfolio : [];
+      var brutoNotas = (dados && typeof dados.notas === "string") ? dados.notas : "";
       var lidas = brutoMag.filter(function (d) { return d && d.titulo; }).map(normalizar);
       var lidasM = brutoMan.filter(function (d) { return d && d.titulo; }).map(normalizarM);
       var lidasC = brutoCar.filter(function (d) { return d && d.titulo; }).map(normalizarM);
@@ -1332,6 +1436,7 @@
         secManobras.definir(lidasM);
         secCardistry.definir(lidasC);
         roteiro = lidasP; salvarP();
+        $("notas-texto").value = brutoNotas; gravarNotas();
         msg("Substituído: " + lidas.length + " mágicas, " + lidasM.length + " manobras, " +
           lidasC.length + " movimentos e " + lidasP.length + " números no show.");
       } else {
@@ -1343,6 +1448,9 @@
         var idsP = roteiro.map(function (r) { return r.id; });
         var novosP = lidasP.filter(function (l) { return idsP.indexOf(l.id) === -1; });
         roteiro = roteiro.concat(novosP); salvarP();
+        if (brutoNotas.trim() && !lerNotas().trim()) {
+          $("notas-texto").value = brutoNotas; gravarNotas();
+        }
         msg((novas.length + novasM + novasC + novosP.length)
           ? novas.length + " mágicas, " + novasM + " manobras, " + novasC + " movimentos e " +
             novosP.length + " números adicionados."
@@ -1436,7 +1544,7 @@
   render();
   secManobras.carregar(); secManobras.render();
   secCardistry.carregar(); secCardistry.render();
-  carregarP(); renderP();
+  carregarP(); renderP(); iniciarNotas();
   var salva = "magicas";
   try { salva = localStorage.getItem("caderno:aba") || "magicas"; } catch (e) {}
   trocarAba(salva);
