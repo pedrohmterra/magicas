@@ -23,6 +23,7 @@
     --safe-b:env(safe-area-inset-bottom,0px);
   }
   *,*::before,*::after{box-sizing:border-box}
+  [hidden]{display:none !important}
   html{-webkit-text-size-adjust:100%}
   body{
     margin:0; background:var(--felt); color:var(--card);
@@ -185,6 +186,28 @@
   .btn-foto input{display:none}
   .tirar-foto{font-size:13px;color:var(--red);text-decoration:underline;text-underline-offset:2px}
 
+  /* ---------- organizar a ordem ---------- */
+  .linha-topo{display:flex;align-items:center;justify-content:flex-end;margin:0 0 10px}
+  .btn-organizar{font-size:13px;color:#A8BDB6;border:1px solid rgba(247,243,233,.26);
+    border-radius:20px;padding:8px 14px}
+  .btn-organizar[data-on="true"]{background:var(--brass);color:#17191A;font-weight:700;
+    border-color:var(--brass)}
+  .aviso-ordem{background:var(--felt-2);border:1px solid var(--brass);border-radius:2px;
+    padding:11px 13px;margin-bottom:12px;font-size:13px;color:#E6D7AE;line-height:1.45}
+  .fila{background:var(--card);color:var(--ink);border-radius:3px;margin-bottom:8px;
+    box-shadow:0 1px 0 rgba(0,0,0,.25);display:flex;align-items:center;overflow:hidden}
+  .fila .pos-f{flex:0 0 38px;text-align:center;font-family:'Bodoni Moda',serif;font-size:17px;
+    color:#6E7A74}
+  .fila .nome-f{flex:1;min-width:0;padding:13px 8px 13px 0;font-size:14.5px;font-weight:700;
+    line-height:1.3;color:var(--ink)}
+  .fila .nome-f small{display:block;font-weight:400;font-size:12px;color:var(--ink-soft);
+    margin-top:2px}
+  .fila .setas-f{flex:0 0 92px;display:flex;gap:2px;padding-right:6px}
+  .fila .setas-f button{flex:1;height:44px;display:grid;place-items:center;font-size:14px;
+    color:#5C6560;border-radius:2px;background:var(--card-2)}
+  .fila .setas-f button:disabled{opacity:.22}
+  .fila .setas-f button:active:not(:disabled){background:#DFD7C3}
+
   /* ---------- treino ---------- */
   .painel-dia{background:var(--felt-2);border:1px solid rgba(247,243,233,.14);border-radius:2px;
     padding:13px 14px;margin-bottom:12px}
@@ -299,8 +322,10 @@
     background:var(--card-2);display:block}
   .mv .sem-capa{display:grid;place-items:center;color:#B3A98F;font-size:22px;
     font-family:'Bodoni Moda',serif}
-  .mv .mt{font-weight:700;font-size:14px;line-height:1.3;padding:10px 10px 0;color:var(--ink);
-    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .mv .mt{font-weight:700;font-size:14px;line-height:1.3;padding:10px 10px 0;color:var(--ink)}
+  .tipo-chip{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.02em;
+    background:var(--card-2);color:#6B7570;padding:2px 7px;border-radius:2px;margin-left:5px;
+    vertical-align:1px}
   .mv .mr{padding:9px 10px 10px;display:flex;flex-direction:column;align-items:flex-start;
     gap:9px;margin-top:auto}
   .mv .st{font-size:11.5px;padding:6px 10px}
@@ -322,6 +347,14 @@
   </div>
 
   <div id="vista-magicas">
+    <div class="linha-topo">
+      <button class="btn-organizar" id="btn-ord-magicas" data-on="false">Organizar ordem</button>
+    </div>
+    <div id="ord-magicas" hidden>
+      <p class="aviso-ordem">Use as setas para montar a sequência. A ordem vale para a lista toda,
+        mesmo quando você filtra depois.</p>
+      <div id="fila-magicas"></div>
+    </div>
     <div class="placar" id="placar"></div>
 
     <div class="barra">
@@ -335,6 +368,14 @@
   </div>
 
   <div id="vista-manobras" hidden>
+    <div class="linha-topo">
+      <button class="btn-organizar" id="btn-ord-manobras" data-on="false">Organizar ordem</button>
+    </div>
+    <div id="ord-manobras" hidden>
+      <p class="aviso-ordem">Use as setas para montar a sequência. A ordem vale para a lista toda,
+        mesmo quando você filtra depois.</p>
+      <div id="fila-manobras"></div>
+    </div>
     <div class="placar" id="placar-m"></div>
 
     <div class="barra">
@@ -342,6 +383,7 @@
       <button class="add" id="btn-nova-m">Nova</button>
     </div>
 
+    <div class="chips" id="chips-m"></div>
     <div id="grade" class="grade"></div>
   </div>
 
@@ -404,6 +446,12 @@
     { id: "treinando", label: "Treinando", dot: "#D8752F" },
     { id: "faco", label: "Já faço", dot: "#4E9C6B" }
   ];
+  // manobra é o que serve a um efeito; cardistry é floreio, feito para ser bonito
+  var MTIPOS = [
+    { id: "manobra", label: "Manobra" },
+    { id: "cardistry", label: "Cardistry" }
+  ];
+  var tipoDe = function (m) { return m && m.tipo === "cardistry" ? "cardistry" : "manobra"; };
 
   var tricks = [];
   var busca = "", filtroCat = "todas", filtroStatus = "todos", soRepertorio = false;
@@ -600,12 +648,7 @@
       if (!q) return true;
       var alvo = (t.titulo + " " + (t.descricao || "") + " " + (t.categorias || []).join(" ")).toLowerCase();
       return alvo.indexOf(q) !== -1;
-    }).sort(function (a, b) {
-      // o repertório do momento vem sempre primeiro
-      var ra = a.repertorio ? 1 : 0, rb = b.repertorio ? 1 : 0;
-      if (ra !== rb) return rb - ra;
-      return (b.criadoEm || 0) - (a.criadoEm || 0);
-    });
+    });  // a ordem é a que a pessoa montou em Organizar ordem
   }
 
   /* ---------- tela principal ---------- */
@@ -866,7 +909,8 @@
   // compartilham este código, cada uma com sua chave e seus textos.
   function criarSecao(cfg) {
     var itens = [];
-    var busca = "", filtroStatus = "todos", formStatus = "treinando", editando = null;
+    var busca = "", filtroStatus = "todos", filtroTipo = "todos";
+    var formStatus = "treinando", formTipo = "manobra", editando = null;
 
     function achar(id) {
       for (var i = 0; i < itens.length; i++) if (itens[i].id === id) return itens[i];
@@ -886,10 +930,12 @@
     }
     function visiveis() {
       var q = busca.trim().toLowerCase();
+      // a ordem da lista é a que a pessoa montou; o filtro só esconde itens
       return itens.filter(function (m) {
         if (filtroStatus !== "todos" && m.status !== filtroStatus) return false;
+        if (filtroTipo !== "todos" && tipoDe(m) !== filtroTipo) return false;
         return !q || m.titulo.toLowerCase().indexOf(q) !== -1;
-      }).sort(function (a, b) { return (b.criadoEm || 0) - (a.criadoEm || 0); });
+      });
     }
     function render() {
       var cont = {};
@@ -902,6 +948,19 @@
           '<span class="l">' + esc(st.label) + "</span></button>";
       }).join("");
 
+      if (cfg.idChips) {
+        var porTipo = {};
+        MTIPOS.forEach(function (t) { porTipo[t.id] = 0; });
+        itens.forEach(function (m) { porTipo[tipoDe(m)]++; });
+        $(cfg.idChips).innerHTML =
+          '<button class="chip" data-tipo="todos" data-on="' + (filtroTipo === "todos") +
+          '">Todas &middot; ' + itens.length + "</button>" +
+          MTIPOS.map(function (t) {
+            return '<button class="chip" data-tipo="' + t.id + '" data-on="' +
+              (filtroTipo === t.id) + '">' + esc(t.label) + " &middot; " + porTipo[t.id] + "</button>";
+          }).join("");
+      }
+
       var lista = visiveis();
       if (!lista.length) {
         $(cfg.idGrade).innerHTML = '<div class="vazio" style="grid-column:1/-1">' +
@@ -911,8 +970,10 @@
       $(cfg.idGrade).innerHTML = lista.map(function (m) {
         var st = mstatusOf(m.status);
         var capa = capaHtml(m, "capa-m") || '<div class="sem-capa" aria-hidden="true">&spades;</div>';
+        var marca = tipoDe(m) === "cardistry"
+          ? '<span class="tipo-chip" data-t="cardistry">Cardistry</span>' : "";
         return '<article class="mv" data-editar-m="' + m.id + '" role="button" tabindex="0">' + capa +
-          '<div class="mt">' + esc(m.titulo) + '</div><div class="mr">' +
+          '<div class="mt">' + esc(m.titulo) + marca + '</div><div class="mr">' +
           '<button class="st" data-ciclar-m="' + m.id + '" title="Mudar o status">' +
           '<i style="background:' + st.dot + '"></i>' + esc(st.label) + "</button>" +
           (m.link ? '<a class="abrir" href="' + esc(m.link) + '" target="_blank" rel="noreferrer">Ver o vídeo</a>' : "") +
@@ -931,6 +992,7 @@
     function abrirForm(m) {
       editando = m ? m.id : null;
       formStatus = m ? m.status : "treinando";
+      formTipo = m ? tipoDe(m) : "manobra";
       var lerFoto = campoFoto("m", m ? m.foto : "");
       abrirOverlay(
         '<button class="fechar-x" id="m-x" aria-label="Fechar">&times;</button>' +
@@ -941,6 +1003,13 @@
         '<input id="m-link" value="' + esc(m ? m.link || "" : "") +
         '" placeholder="Cole o endereço do YouTube" inputmode="url"></div>' +
         htmlCampoFoto("m", "Foto") +
+        '<div class="campo"><label>O que é</label><div class="op" id="m-tipo">' +
+        MTIPOS.map(function (t) {
+          return '<button data-tp="' + t.id + '" data-on="' + (formTipo === t.id) + '">' +
+            esc(t.label) + "</button>";
+        }).join("") +
+        '<p class="dica">Manobra é o que serve a um efeito. Cardistry é floreio, ' +
+        "feito para ser bonito.</p></div></div>" +
         '<div class="campo"><label>Como está</label><div class="op" id="m-status">' +
         MSTATUS.map(function (st) {
           return '<button data-st="' + st.id + '" data-on="' + (formStatus === st.id) + '">' + esc(st.label) + "</button>";
@@ -949,6 +1018,13 @@
         '<button class="cancelar" id="m-cancelar">Cancelar</button>' +
         (m ? '<button class="apagar" id="m-apagar">Apagar</button>' : "") + "</div>"
       );
+      $("m-tipo").addEventListener("click", function (e) {
+        var b = e.target.closest("button[data-tp]"); if (!b) return;
+        formTipo = b.getAttribute("data-tp");
+        Array.prototype.forEach.call($("m-tipo").children, function (x) {
+          if (x.getAttribute("data-tp")) x.setAttribute("data-on", x.getAttribute("data-tp") === formTipo);
+        });
+      });
       $("m-status").addEventListener("click", function (e) {
         var b = e.target.closest("button[data-st]"); if (!b) return;
         formStatus = b.getAttribute("data-st");
@@ -967,7 +1043,7 @@
         var titulo = $("m-titulo").value.trim();
         if (!titulo) { $("m-titulo").focus(); return; }
         var dados = { titulo: titulo, link: $("m-link").value.trim(),
-          foto: lerFoto(), status: formStatus };
+          foto: lerFoto(), status: formStatus, tipo: formTipo };
         if (editando) {
           var id = editando;
           itens = itens.map(function (x) { return x.id === id ? Object.assign({}, x, dados) : x; });
@@ -989,6 +1065,14 @@
       filtroStatus = filtroStatus === st ? "todos" : st;
       render();
     });
+    if (cfg.idChips) {
+      $(cfg.idChips).addEventListener("click", function (e) {
+        var b = e.target.closest("button[data-tipo]"); if (!b) return;
+        var t = b.getAttribute("data-tipo");
+        filtroTipo = (t === "todos" || filtroTipo === t) ? "todos" : t;
+        render();
+      });
+    }
     $(cfg.idGrade).addEventListener("click", function (e) {
       var ci = e.target.closest("button[data-ciclar-m]");
       if (ci) { e.stopPropagation(); ciclar(ci.getAttribute("data-ciclar-m")); return; }
@@ -1007,6 +1091,7 @@
       render: render,
       salvar: salvar,
       lista: function () { return itens; },
+      ordenar: function (novos) { itens = novos; salvar(); },
       definir: function (novos) { itens = novos; salvar(); },
       juntar: function (novos) {
         var ids = itens.map(function (m) { return m.id; });
@@ -1021,6 +1106,7 @@
   var secManobras = criarSecao({
     chave: "manobras:v1",
     idPlacar: "placar-m", idGrade: "grade", idBusca: "busca-m", idBotaoNovo: "btn-nova-m",
+    idChips: "chips-m",
     tituloNovo: "Nova manobra", tituloEditar: "Editar manobra",
     rotuloNome: "Nome da manobra", exemplo: "Ex.: Faro shuffle",
     confirmaApagar: "Apagar esta manobra?",
@@ -1037,9 +1123,28 @@
     var antigos;
     try { antigos = JSON.parse(bruto); } catch (e) { antigos = null; }
     if (Array.isArray(antigos) && antigos.length) {
-      secManobras.juntar(antigos.filter(function (m) { return m && m.titulo; }));
+      secManobras.juntar(antigos.filter(function (m) { return m && m.titulo; })
+        .map(function (m) { return Object.assign({}, m, { tipo: "cardistry" }); }));
     }
     try { localStorage.removeItem("cardistry:v1"); } catch (e) {}
+  }
+
+  // Quem abriu o app entre a fusão das listas e a criação das categorias ficou com
+  // os floreios sem marca. Esta correção roda uma vez e devolve a etiqueta a eles.
+  var FLOREIOS_ANTIGOS = ["6q167i7z", "1z8pfapu", "m4gp8yj0", "9z10agri", "mqzs3o6g"];
+  function marcarFloreiosAntigos() {
+    try { if (localStorage.getItem("cardistry:remarcado") === "1") return; } catch (e) { return; }
+    if (!secManobras.lista().length) return;  // sem dados ainda: tenta de novo na próxima vez
+    var mudou = false;
+    var lista = secManobras.lista().map(function (m) {
+      if (!m.tipo && FLOREIOS_ANTIGOS.indexOf(m.id) !== -1) {
+        mudou = true;
+        return Object.assign({}, m, { tipo: "cardistry" });
+      }
+      return m;
+    });
+    if (mudou) secManobras.definir(lista);
+    try { localStorage.setItem("cardistry:remarcado", "1"); } catch (e) {}
   }
 
   /* ---------- bloco de notas do portfólio ---------- */
@@ -1111,6 +1216,61 @@
       crescerNotas();
       $("notas-texto").focus();
     });
+  }
+
+  /* ---------- organizar: a mesma ferramenta nas duas listas ---------- */
+  // Recebe funções para ler e gravar a lista, e cuida da tela de reordenar.
+  function criarOrganizador(cfg) {
+    var ligado = false;
+
+    function trocar(i, j) {
+      var atual = cfg.ler();
+      if (i < 0 || j < 0 || i >= atual.length || j >= atual.length) return;
+      var copia = atual.slice();
+      var guarda = copia[i]; copia[i] = copia[j]; copia[j] = guarda;
+      cfg.gravar(copia);
+      pintar();
+    }
+
+    function pintar() {
+      var atual = cfg.ler();
+      if (!atual.length) {
+        $(cfg.idFila).innerHTML = '<div class="vazio">Nada para organizar ainda.</div>';
+        return;
+      }
+      $(cfg.idFila).innerHTML = atual.map(function (item, i) {
+        var abaixo = cfg.detalhe ? cfg.detalhe(item) : "";
+        return '<article class="fila">' +
+          '<span class="pos-f">' + (i + 1) + "</span>" +
+          '<span class="nome-f">' + esc(item.titulo) +
+          (abaixo ? "<small>" + esc(abaixo) + "</small>" : "") + "</span>" +
+          '<span class="setas-f">' +
+          '<button data-cima="' + i + '" aria-label="Subir"' + (i === 0 ? " disabled" : "") +
+          ">&#9650;</button>" +
+          '<button data-baixo="' + i + '" aria-label="Descer"' +
+          (i === atual.length - 1 ? " disabled" : "") + ">&#9660;</button>" +
+          "</span></article>";
+      }).join("");
+    }
+
+    function alternar(abrir) {
+      ligado = abrir === undefined ? !ligado : abrir;
+      $(cfg.idArea).hidden = !ligado;
+      $(cfg.idBotao).setAttribute("data-on", ligado ? "true" : "false");
+      $(cfg.idBotao).textContent = ligado ? "Pronto" : "Organizar ordem";
+      cfg.aoAlternar(ligado);
+      if (ligado) { pintar(); window.scrollTo(0, 0); }
+    }
+
+    $(cfg.idBotao).addEventListener("click", function () { alternar(); });
+    $(cfg.idFila).addEventListener("click", function (e) {
+      var sobe = e.target.closest("button[data-cima]");
+      if (sobe) { var i = parseInt(sobe.getAttribute("data-cima"), 10); trocar(i, i - 1); return; }
+      var desce = e.target.closest("button[data-baixo]");
+      if (desce) { var j = parseInt(desce.getAttribute("data-baixo"), 10); trocar(j, j + 1); }
+    });
+
+    return { fechar: function () { if (ligado) alternar(false); }, pintar: pintar };
   }
 
   /* ---------- treino: a rotina do dia ---------- */
@@ -1565,6 +1725,8 @@
   };
 
   function trocarAba(nome) {
+    if (typeof ordMagicas !== "undefined") ordMagicas.fechar();
+    if (typeof ordManobras !== "undefined") ordManobras.fechar();
     aba = SUBTITULOS[nome] ? nome : "magicas";
     try { localStorage.setItem("caderno:aba", aba); } catch (e) {}
     Array.prototype.forEach.call($("abas").children, function (b) {
@@ -1777,6 +1939,39 @@
     $("b-fechar").addEventListener("click", fecharOverlay);
   }
 
+  var ordMagicas = criarOrganizador({
+    idBotao: "btn-ord-magicas", idArea: "ord-magicas", idFila: "fila-magicas",
+    ler: function () { return tricks; },
+    gravar: function (novos) { tricks = novos; salvarTudo(); },
+    detalhe: function (t) {
+      var partes = [statusOf(t.status).label];
+      if (t.repertorio) partes.push("no repertório");
+      return partes.join(" · ");
+    },
+    aoAlternar: function (ligado) {
+      $("placar").hidden = ligado;
+      $("faixa-rep").hidden = ligado;
+      $("chips").hidden = ligado;
+      $("lista").hidden = ligado;
+      $("busca").closest(".barra").hidden = ligado;
+    }
+  });
+
+  var ordManobras = criarOrganizador({
+    idBotao: "btn-ord-manobras", idArea: "ord-manobras", idFila: "fila-manobras",
+    ler: function () { return secManobras.lista(); },
+    gravar: function (novos) { secManobras.ordenar(novos); },
+    detalhe: function (m) {
+      return (tipoDe(m) === "cardistry" ? "Cardistry" : "Manobra") + " · " + mstatusOf(m.status).label;
+    },
+    aoAlternar: function (ligado) {
+      $("placar-m").hidden = ligado;
+      $("chips-m").hidden = ligado;
+      $("grade").hidden = ligado;
+      $("busca-m").closest(".barra").hidden = ligado;
+    }
+  });
+
   /* ---------- eventos ---------- */
   $("busca").addEventListener("input", function (e) { busca = e.target.value; render(); });
   $("btn-nova").addEventListener("click", function () { lendoId = null; abrirForm(null); });
@@ -1871,6 +2066,7 @@
   render();
   secManobras.carregar(); secManobras.render();
   juntarCardistryAntigo();
+  marcarFloreiosAntigos();
   carregarP(); renderP(); iniciarNotas();
   carregarT(); renderT();
   var salva = "magicas";
