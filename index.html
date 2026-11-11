@@ -109,6 +109,7 @@
   .fundo.on{display:flex}
   .modal{background:var(--card);color:var(--ink);width:100%;max-width:560px;
     height:94dvh;max-height:94dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    scroll-padding-bottom:96px;
     border-radius:10px 10px 0 0;padding:20px 16px calc(24px + var(--safe-b));
     position:relative}
   .modal h2{font-family:'Bodoni Moda',serif;font-weight:400;font-size:25px;line-height:1.1;
@@ -122,7 +123,8 @@
   .campo input,.campo textarea{background:#fff;border:1px solid #D8D0BC;border-radius:2px;
     padding:12px;color:var(--ink);font-size:16px}
   .campo textarea{min-height:230px;resize:vertical;line-height:1.5}
-  #f-desc{min-height:58dvh;resize:none;overflow:hidden;line-height:1.6;padding:14px}
+  #f-desc,#p-desc{min-height:38dvh;max-height:48dvh;resize:none;overflow-y:auto;
+    line-height:1.6;padding:14px;scroll-padding-bottom:1.6em}
   .dica{font-size:12px;color:#7A807B;margin:6px 0 0;line-height:1.45}
   .op{display:flex;gap:6px;flex-wrap:wrap}
   .op button{border:1px solid #D8D0BC;border-radius:20px;padding:9px 13px;font-size:13.5px;color:#4A4F4B}
@@ -398,6 +400,29 @@
     if (!url) return null;
     var m = String(url).match(/(?:youtu\.be\/|[?&]v=|shorts\/|embed\/|live\/)([A-Za-z0-9_-]{11})/);
     return m ? m[1] : null;
+  }
+
+  // A barra de botões flutua sobre o formulário. Esta função rola a folha o
+  // necessário para que o campo em uso termine acima dela, e não atrás.
+  function manterVisivel(el) {
+    if (!el || !el.closest) return;
+    var folha = el.closest(".modal"); if (!folha) return;
+    var barra = folha.querySelector(".acoes-fixas"); if (!barra) return;
+    var campo = el.getBoundingClientRect(), chao = barra.getBoundingClientRect();
+    var excesso = campo.bottom - chao.top;
+    if (excesso > 0) folha.scrollTop += Math.ceil(excesso);
+  }
+
+  // O campo acompanha o texto até o teto definido no CSS. Passando dali ele rola
+  // por dentro, para que a linha sendo digitada nunca fique atrás da barra de botões.
+  function ajustarAltura(el, minimo) {
+    if (!el) return;
+    el.style.height = "auto";
+    var teto = parseFloat(getComputedStyle(el).maxHeight);
+    var alvo = el.scrollHeight + 2;
+    if (minimo) alvo = Math.max(minimo, alvo);
+    if (teto && !isNaN(teto)) alvo = Math.min(teto, alvo);
+    el.style.height = alvo + "px";
   }
 
   /* ---------- foto própria ---------- */
@@ -732,12 +757,10 @@
     }
     // a área de escrita cresce junto com o texto, sem rolagem interna
     var desc = $("f-desc");
-    function crescer() {
-      desc.style.height = "auto";
-      desc.style.height = desc.scrollHeight + 2 + "px";
-    }
+    function crescer() { ajustarAltura(desc); manterVisivel(desc); }
     desc.addEventListener("input", crescer);
-    setTimeout(crescer, 0);
+    desc.addEventListener("focus", function () { setTimeout(crescer, 180); });
+    setTimeout(function () { ajustarAltura(desc); }, 0);
 
     $("f-addcat").addEventListener("click", criarCat);
     $("f-novacat").addEventListener("keydown", function (e) {
@@ -1005,11 +1028,7 @@
     try { localStorage.setItem(NABERTO, abrir ? "1" : "0"); } catch (e) {}
     if (abrir) crescerNotas();
   }
-  function crescerNotas() {
-    var c = $("notas-texto");
-    c.style.height = "auto";
-    c.style.height = Math.max(132, c.scrollHeight + 2) + "px";
-  }
+  function crescerNotas() { ajustarAltura($("notas-texto"), 132); }
   function gravarNotas() {
     try {
       localStorage.setItem(NKEY, $("notas-texto").value);
@@ -1162,9 +1181,10 @@
       '<button class="cancelar" id="p-cancelar">Cancelar</button></div>'
     );
     var cx = $("p-desc");
-    function crescer() { cx.style.height = "auto"; cx.style.height = cx.scrollHeight + 2 + "px"; }
+    function crescer() { ajustarAltura(cx); manterVisivel(cx); }
     cx.addEventListener("input", crescer);
-    setTimeout(crescer, 0);
+    cx.addEventListener("focus", function () { setTimeout(crescer, 180); });
+    setTimeout(function () { ajustarAltura(cx); }, 0);
 
     function sair() { if (it) abrirItem(acharItem(it.id) || it); else fecharOverlay(); }
     $("p-fx").addEventListener("click", sair);
