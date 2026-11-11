@@ -185,6 +185,42 @@
   .btn-foto input{display:none}
   .tirar-foto{font-size:13px;color:var(--red);text-decoration:underline;text-underline-offset:2px}
 
+  /* ---------- treino ---------- */
+  .painel-dia{background:var(--felt-2);border:1px solid rgba(247,243,233,.14);border-radius:2px;
+    padding:13px 14px;margin-bottom:12px}
+  .painel-dia .dia{font-size:12.5px;color:#9DB3AC;margin:0 0 6px}
+  .painel-dia .conta{font-family:'Bodoni Moda',serif;font-size:21px;color:var(--card);
+    line-height:1.1;margin:0}
+  .painel-dia .conta b{color:var(--brass);font-weight:400}
+  .trilho{height:6px;background:#0A2621;border-radius:3px;margin-top:10px;overflow:hidden}
+  .trilho i{display:block;height:100%;background:var(--brass);transition:width .25s}
+  .painel-dia .pe{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px}
+  .painel-dia .feito{font-size:13px;color:#8FD3A8;font-weight:700}
+  .zerar{font-size:12.5px;color:#DCA9C6;text-decoration:underline;text-underline-offset:2px;
+    color:#E7BBD2}
+
+  .ex{background:var(--card);color:var(--ink);border-radius:3px;margin-bottom:9px;
+    box-shadow:0 1px 0 rgba(0,0,0,.25);display:flex;align-items:stretch;overflow:hidden}
+  .ex[data-feito="true"]{background:#EFEFE4}
+  .marca{flex:0 0 56px;display:grid;place-items:center;background:var(--card-2);
+    border:none;cursor:pointer;padding:0}
+  .marca:active{background:#DFD7C3}
+  .marca i{width:28px;height:28px;border-radius:50%;border:2px solid #B9AF95;display:grid;
+    place-items:center;font-size:15px;color:transparent;line-height:1;font-style:normal}
+  .ex[data-feito="true"] .marca i{background:#4E9C6B;border-color:#4E9C6B;color:#fff}
+  .meio-ex{flex:1;min-width:0;padding:12px;text-align:left;background:none;border:none;
+    color:inherit;cursor:pointer}
+  .meio-ex:active{background:#F1ECDF}
+  .nome-ex{font-weight:700;font-size:15px;line-height:1.3;color:var(--ink);display:block}
+  .ex[data-feito="true"] .nome-ex{text-decoration:line-through;color:#7B8178}
+  .reps{font-size:12.5px;color:var(--ink-soft);margin-top:4px;display:block}
+  .setas-ex{flex:0 0 40px;display:flex;flex-direction:column;justify-content:center;
+    gap:2px;padding-right:4px}
+  .setas-ex button{height:30px;display:grid;place-items:center;font-size:13px;color:#8A908B;
+    border-radius:2px}
+  .setas-ex button:disabled{opacity:.22}
+  .setas-ex button:active:not(:disabled){background:var(--card-2)}
+
   /* ---------- portfólio ---------- */
   .notas{background:var(--card);color:var(--ink);border-radius:3px;margin-bottom:12px;
     box-shadow:0 1px 0 rgba(0,0,0,.25);overflow:hidden}
@@ -281,7 +317,7 @@
   <div class="abas" id="abas">
     <button data-aba="magicas" data-on="true">Mágicas</button>
     <button data-aba="manobras" data-on="false">Manobras</button>
-    <button data-aba="cardistry" data-on="false">Cardistry</button>
+    <button data-aba="treino" data-on="false">Treino</button>
     <button data-aba="portfolio" data-on="false">Portfólio</button>
   </div>
 
@@ -302,22 +338,21 @@
     <div class="placar" id="placar-m"></div>
 
     <div class="barra">
-      <input class="busca" id="busca-m" placeholder="Buscar manobra" autocomplete="off">
+      <input class="busca" id="busca-m" placeholder="Buscar manobra ou floreio" autocomplete="off">
       <button class="add" id="btn-nova-m">Nova</button>
     </div>
 
     <div id="grade" class="grade"></div>
   </div>
 
-  <div id="vista-cardistry" hidden>
-    <div class="placar" id="placar-c"></div>
+  <div id="vista-treino" hidden>
+    <div class="painel-dia" id="painel-dia"></div>
 
     <div class="barra">
-      <input class="busca" id="busca-c" placeholder="Buscar movimento" autocomplete="off">
-      <button class="add" id="btn-nova-c">Novo</button>
+      <button class="add add-largo" id="btn-add-treino">Adicionar exercício</button>
     </div>
 
-    <div id="grade-c" class="grade"></div>
+    <div id="rotina"></div>
   </div>
 
   <div id="vista-portfolio" hidden>
@@ -989,22 +1024,29 @@
     tituloNovo: "Nova manobra", tituloEditar: "Editar manobra",
     rotuloNome: "Nome da manobra", exemplo: "Ex.: Faro shuffle",
     confirmaApagar: "Apagar esta manobra?",
-    vazio: "Cole o link de uma manobra que você quer tirar: um embaralhamento, um corte, uma passada."
+    vazio: "Cole o link de uma manobra ou floreio que você quer tirar: um embaralhamento, " +
+      "um corte, uma passada, um fan."
   });
 
-  var secCardistry = criarSecao({
-    chave: "cardistry:v1",
-    idPlacar: "placar-c", idGrade: "grade-c", idBusca: "busca-c", idBotaoNovo: "btn-nova-c",
-    tituloNovo: "Novo movimento", tituloEditar: "Editar movimento",
-    rotuloNome: "Nome do movimento", exemplo: "Ex.: Sybil cut",
-    confirmaApagar: "Apagar este movimento?",
-    vazio: "Guarde aqui os floreios que você quer dominar: cortes, fans, aberturas na mão."
-  });
+  // O que era a aba de cardistry passou a viver junto das manobras. Esta rotina
+  // roda uma vez por aparelho e traz os movimentos antigos para a lista de manobras.
+  function juntarCardistryAntigo() {
+    var bruto;
+    try { bruto = localStorage.getItem("cardistry:v1"); } catch (e) { return; }
+    if (!bruto) return;
+    var antigos;
+    try { antigos = JSON.parse(bruto); } catch (e) { antigos = null; }
+    if (Array.isArray(antigos) && antigos.length) {
+      secManobras.juntar(antigos.filter(function (m) { return m && m.titulo; }));
+    }
+    try { localStorage.removeItem("cardistry:v1"); } catch (e) {}
+  }
 
   /* ---------- bloco de notas do portfólio ---------- */
   var NKEY = "portfolio:notas";
   var NABERTO = "portfolio:notas-aberto";
   var relogioNotas = null;
+  var notasEditadas = false;
 
   function lerNotas() {
     try { return localStorage.getItem(NKEY) || ""; } catch (e) { return ""; }
@@ -1029,7 +1071,10 @@
     if (abrir) crescerNotas();
   }
   function crescerNotas() { ajustarAltura($("notas-texto"), 132); }
+  // Só grava depois de uma edição de verdade. Sem isso, apenas abrir e fechar o
+  // app em outra aba apagaria o que foi escrito do outro lado.
   function gravarNotas() {
+    if (!notasEditadas) return;
     try {
       localStorage.setItem(NKEY, $("notas-texto").value);
       $("notas-estado").textContent = "Salvo";
@@ -1049,6 +1094,7 @@
       abrirNotas($("notas").getAttribute("data-aberto") !== "true");
     });
     $("notas-texto").addEventListener("input", function () {
+      notasEditadas = true;
       crescerNotas();
       $("notas-estado").textContent = "Escrevendo…";
       if (relogioNotas) clearTimeout(relogioNotas);
@@ -1060,10 +1106,242 @@
     $("notas-limpar").addEventListener("click", function () {
       if (!confirm("Apagar tudo que está anotado aqui?")) return;
       $("notas-texto").value = "";
+      notasEditadas = true;
       gravarNotas();
       crescerNotas();
       $("notas-texto").focus();
     });
+  }
+
+  /* ---------- treino: a rotina do dia ---------- */
+  var TKEY = "treino:v1";
+  var TFEITOS = "treino:feitos";
+  var rotina = [];
+  var feitosHoje = [];
+
+  function hojeISO() {
+    var d = new Date();
+    return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
+  }
+  function diaPorExtenso() {
+    var dias = ["domingo", "segunda-feira", "terça-feira", "quarta-feira", "quinta-feira",
+      "sexta-feira", "sábado"];
+    var meses = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho",
+      "agosto", "setembro", "outubro", "novembro", "dezembro"];
+    var d = new Date();
+    return dias[d.getDay()] + ", " + d.getDate() + " de " + meses[d.getMonth()];
+  }
+
+  function carregarT() {
+    try {
+      var raw = localStorage.getItem(TKEY);
+      rotina = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(rotina)) rotina = [];
+    } catch (e) { rotina = []; }
+
+    // as marcações valem só para o dia de hoje: virou o dia, a lista começa limpa
+    feitosHoje = [];
+    try {
+      var guardado = JSON.parse(localStorage.getItem(TFEITOS) || "{}");
+      if (guardado && guardado.dia === hojeISO() && Array.isArray(guardado.ids)) {
+        feitosHoje = guardado.ids;
+      }
+    } catch (e) {}
+  }
+  function salvarT() {
+    try { localStorage.setItem(TKEY, JSON.stringify(rotina)); }
+    catch (e) { alert(RECADO_CHEIO); }
+    renderT();
+  }
+  function salvarFeitos() {
+    try { localStorage.setItem(TFEITOS, JSON.stringify({ dia: hojeISO(), ids: feitosHoje })); }
+    catch (e) {}
+    renderT();
+  }
+  function acharEx(id) {
+    for (var i = 0; i < rotina.length; i++) if (rotina[i].id === id) return rotina[i];
+    return null;
+  }
+  function posEx(id) {
+    for (var i = 0; i < rotina.length; i++) if (rotina[i].id === id) return i;
+    return -1;
+  }
+  function moverEx(id, passo) {
+    var i = posEx(id), j = i + passo;
+    if (i < 0 || j < 0 || j >= rotina.length) return;
+    var c = rotina.slice(); var t = c[i]; c[i] = c[j]; c[j] = t;
+    rotina = c; salvarT();
+  }
+  function alternarFeito(id) {
+    var i = feitosHoje.indexOf(id);
+    if (i === -1) feitosHoje.push(id); else feitosHoje.splice(i, 1);
+    salvarFeitos();
+  }
+
+  function renderT() {
+    var total = rotina.length;
+    var prontos = rotina.filter(function (e) { return feitosHoje.indexOf(e.id) !== -1; }).length;
+    var pct = total ? Math.round((prontos / total) * 100) : 0;
+
+    $("painel-dia").innerHTML = total
+      ? '<p class="dia">' + esc(diaPorExtenso()) + "</p>" +
+        '<p class="conta"><b>' + prontos + "</b> de " + total +
+        (total === 1 ? " exercício feito hoje" : " exercícios feitos hoje") + "</p>" +
+        '<div class="trilho"><i style="width:' + pct + '%"></i></div>' +
+        '<div class="pe">' +
+        (prontos === total ? '<span class="feito">Treino do dia completo.</span>' : "<span></span>") +
+        (prontos ? '<button class="zerar" id="btn-zerar">Desmarcar tudo</button>' : "") +
+        "</div>"
+      : '<p class="dia">' + esc(diaPorExtenso()) + "</p>" +
+        '<p class="conta">Monte sua rotina</p>' +
+        '<div class="pe"><span style="font-size:13px;color:#9DB3AC">' +
+        "Cada exercício guarda quantas repetições você quer fazer. As marcações zeram sozinhas todo dia." +
+        "</span></div>";
+
+    if (!total) {
+      $("rotina").innerHTML = '<div class="vazio">Nada na rotina ainda. ' +
+        "Toque em Adicionar exercício para puxar uma mágica, uma manobra, " +
+        "ou escrever um treino solto.</div>";
+      return;
+    }
+
+    $("rotina").innerHTML = rotina.map(function (e, i) {
+      var feito = feitosHoje.indexOf(e.id) !== -1;
+      var quanto = e.reps
+        ? e.reps + (e.reps === 1 ? " repetição" : " repetições")
+        : "sem contagem";
+      return '<article class="ex" data-feito="' + feito + '">' +
+        '<button class="marca" data-marca="' + e.id + '" aria-pressed="' + feito +
+        '" aria-label="Marcar como feito hoje"><i>&#10003;</i></button>' +
+        '<button class="meio-ex" data-ex="' + e.id + '">' +
+        '<span class="nome-ex">' + esc(e.titulo) + "</span>" +
+        '<span class="reps">' + esc(quanto) + "</span></button>" +
+        '<div class="setas-ex">' +
+        '<button data-sobe-ex="' + e.id + '" aria-label="Subir"' + (i === 0 ? " disabled" : "") +
+        ">&#9650;</button>" +
+        '<button data-desce-ex="' + e.id + '" aria-label="Descer"' +
+        (i === total - 1 ? " disabled" : "") + ">&#9660;</button>" +
+        "</div></article>";
+    }).join("");
+  }
+
+  function abrirFormEx(e) {
+    var editando = e ? e.id : null;
+    abrirOverlay(
+      '<button class="fechar-x" id="t-x" aria-label="Fechar">&times;</button>' +
+      "<h2>" + (e ? "Editar exercício" : "Novo exercício") + "</h2>" +
+      '<div class="campo"><label for="t-titulo">O que treinar</label>' +
+      '<input id="t-titulo" value="' + esc(e ? e.titulo : "") + '" placeholder="Ex.: Double lift"></div>' +
+      '<div class="campo"><label for="t-reps">Repetições</label>' +
+      '<input id="t-reps" type="number" inputmode="numeric" min="0" max="999" value="' +
+      esc(e && e.reps ? String(e.reps) : "10") + '" placeholder="10">' +
+      '<p class="dica">Deixe em branco para um exercício sem contagem, ' +
+      "como ensaiar a rotina inteira.</p></div>" +
+      '<div class="acoes-fixas"><button class="salvar" id="t-salvar">' +
+      (e ? "Salvar" : "Pôr na rotina") + "</button>" +
+      '<button class="cancelar" id="t-cancelar">Cancelar</button>' +
+      (e ? '<button class="apagar" id="t-apagar">Tirar da rotina</button>' : "") + "</div>"
+    );
+    $("t-x").addEventListener("click", fecharOverlay);
+    $("t-cancelar").addEventListener("click", fecharOverlay);
+    if ($("t-apagar")) $("t-apagar").addEventListener("click", function () {
+      if (!confirm("Tirar este exercício da rotina?")) return;
+      rotina = rotina.filter(function (x) { return x.id !== editando; });
+      feitosHoje = feitosHoje.filter(function (id) { return id !== editando; });
+      fecharOverlay(); salvarFeitos(); salvarT();
+    });
+    $("t-salvar").addEventListener("click", function () {
+      var titulo = $("t-titulo").value.trim();
+      if (!titulo) { $("t-titulo").focus(); return; }
+      var reps = parseInt($("t-reps").value, 10);
+      if (isNaN(reps) || reps < 0) reps = 0;
+      var dados = { titulo: titulo, reps: reps };
+      if (editando) {
+        rotina = rotina.map(function (x) { return x.id === editando ? Object.assign({}, x, dados) : x; });
+      } else {
+        rotina.push(Object.assign({ id: uid(), criadoEm: Date.now() }, dados));
+      }
+      fecharOverlay(); salvarT();
+    });
+    if (!e) $("t-titulo").focus();
+  }
+
+  function abrirEscolhaTreino() {
+    abrirOverlay(
+      '<button class="fechar-x" id="te-x" aria-label="Fechar">&times;</button>' +
+      "<h2>Adicionar à rotina</h2>" +
+      '<div class="escolha">' +
+      '<button id="te-magicas">Puxar de uma mágica' +
+      "<span>Treinar um efeito que já está no caderno.</span></button>" +
+      '<button id="te-manobras">Puxar de uma manobra' +
+      "<span>Técnica ou floreio que você está tirando.</span></button>" +
+      '<button id="te-solto">Escrever um exercício' +
+      "<span>Para o que não está em lista nenhuma.</span></button></div>" +
+      '<div class="acoes-fixas"><button class="cancelar" id="te-fechar">Cancelar</button></div>'
+    );
+    $("te-x").addEventListener("click", fecharOverlay);
+    $("te-fechar").addEventListener("click", fecharOverlay);
+    $("te-solto").addEventListener("click", function () { abrirFormEx(null); });
+    $("te-magicas").addEventListener("click", function () { listaParaTreino("magicas"); });
+    $("te-manobras").addEventListener("click", function () { listaParaTreino("manobras"); });
+  }
+
+  function listaParaTreino(fonte) {
+    var itens = fonte === "magicas" ? tricks : secManobras.lista();
+    var rotulo = fonte === "magicas" ? "mágica" : "manobra";
+    if (!itens.length) {
+      abrirOverlay(
+        '<button class="fechar-x" id="tl-x" aria-label="Fechar">&times;</button>' +
+        "<h2>Escolher " + rotulo + "</h2>" +
+        '<p class="txt">Essa lista ainda está vazia. Escreva um exercício solto ou ' +
+        "cadastre algo na aba correspondente.</p>" +
+        '<div class="acoes-fixas"><button class="salvar" id="tl-solto">Escrever exercício</button>' +
+        '<button class="cancelar" id="tl-fechar">Fechar</button></div>'
+      );
+      $("tl-x").addEventListener("click", fecharOverlay);
+      $("tl-fechar").addEventListener("click", fecharOverlay);
+      $("tl-solto").addEventListener("click", function () { abrirFormEx(null); });
+      return;
+    }
+    abrirOverlay(
+      '<button class="fechar-x" id="tl-x" aria-label="Fechar">&times;</button>' +
+      "<h2>Escolher " + rotulo + "</h2>" +
+      '<div class="campo"><input id="tl-busca" placeholder="Buscar" autocomplete="off"></div>' +
+      '<div class="lista-origem" id="tl-lista"></div>' +
+      '<div class="acoes-fixas"><button class="cancelar" id="tl-fechar">Cancelar</button></div>'
+    );
+    function pintar() {
+      var q = $("tl-busca").value.trim().toLowerCase();
+      var achados = itens.filter(function (t) {
+        return !q || t.titulo.toLowerCase().indexOf(q) !== -1;
+      });
+      if (!achados.length) {
+        $("tl-lista").innerHTML = '<p class="txt">Nada com esse nome.</p>';
+        return;
+      }
+      $("tl-lista").innerHTML = achados.map(function (t) {
+        var capa = capaHtml(t, "mini") || '<div class="mini-vazia" aria-hidden="true">&spades;</div>';
+        var jaTem = rotina.some(function (r) { return r.origemId === t.id; });
+        return '<button data-treina="' + t.id + '">' + capa +
+          '<span style="min-width:0"><span class="nome">' + esc(t.titulo) + "</span>" +
+          (jaTem ? '<span class="ja">Já está na rotina</span>' : "") + "</span></button>";
+      }).join("");
+    }
+    pintar();
+    $("tl-busca").addEventListener("input", pintar);
+    $("tl-x").addEventListener("click", fecharOverlay);
+    $("tl-fechar").addEventListener("click", fecharOverlay);
+    $("tl-lista").addEventListener("click", function (ev) {
+      var b = ev.target.closest("button[data-treina]"); if (!b) return;
+      var achado = null, alvo = b.getAttribute("data-treina");
+      itens.forEach(function (t) { if (t.id === alvo) achado = t; });
+      if (!achado) return;
+      rotina.push({ id: uid(), criadoEm: Date.now(), origemId: achado.id,
+        titulo: achado.titulo, reps: 10 });
+      salvarT();
+      fecharOverlay();
+    });
+    $("tl-busca").focus();
   }
 
   /* ---------- portfólio: a sequência do show ---------- */
@@ -1281,8 +1559,8 @@
 
   var SUBTITULOS = {
     magicas: "Tudo que você viu, estudou e já levou pra mesa — com o vídeo de origem junto.",
-    manobras: "Só as manobras: o vídeo e se você já faz ou ainda está treinando.",
-    cardistry: "Os floreios: malabarismo com as cartas, pelo prazer de ver a mão trabalhar.",
+    manobras: "Manobras e floreios: o vídeo e se você já faz ou ainda está treinando.",
+    treino: "A rotina de hoje: o que repetir, quantas vezes, e o que já saiu da lista.",
     portfolio: "A ordem do show: o que entra primeiro, o que fecha, e o que dizer no meio."
   };
 
@@ -1294,16 +1572,17 @@
     });
     $("vista-magicas").hidden = aba !== "magicas";
     $("vista-manobras").hidden = aba !== "manobras";
-    $("vista-cardistry").hidden = aba !== "cardistry";
+    $("vista-treino").hidden = aba !== "treino";
     $("vista-portfolio").hidden = aba !== "portfolio";
+    if (aba === "treino") { carregarT(); renderT(); }
     $("sub").textContent = SUBTITULOS[aba];
     window.scrollTo(0, 0);
   }
 
   function abrirBackup() {
-    var json = JSON.stringify({ versao: 5, magicas: tricks,
-      manobras: secManobras.lista(), cardistry: secCardistry.lista(),
-      portfolio: roteiro, notas: lerNotas() }, null, 2);
+    var json = JSON.stringify({ versao: 6, magicas: tricks,
+      manobras: secManobras.lista(),
+      portfolio: roteiro, treino: rotina, notas: lerNotas() }, null, 2);
     var iosLike = /iPad|iPhone|iPod/.test(navigator.userAgent);
     abrirOverlay(
       '<button class="fechar-x" id="b-x" aria-label="Fechar">&times;</button>' +
@@ -1317,8 +1596,8 @@
       "</ol>" +
       '<div class="bloco"><h3>Guardar uma cópia</h3>' +
       '<p class="txt">' + tricks.length + " mágicas, " + secManobras.lista().length +
-      " manobras, " + secCardistry.lista().length + " movimentos de cardistry e " +
-      roteiro.length + " números no show. " +
+      " manobras e floreios, " + roteiro.length + " números no show e " +
+      rotina.length + " exercícios na rotina. " +
       "Os dados ficam só neste aparelho, então vale baixar o arquivo de vez em quando.</p>" +
       (json.length > 400000
         ? '<p class="txt"><b>Com as fotos, este backup ficou grande (' + Math.round(json.length / 1024) +
@@ -1430,9 +1709,21 @@
       var brutoCar = (dados && Array.isArray(dados.cardistry)) ? dados.cardistry : [];
       var brutoPort = (dados && Array.isArray(dados.portfolio)) ? dados.portfolio : [];
       var brutoNotas = (dados && typeof dados.notas === "string") ? dados.notas : "";
+      var brutoTre = (dados && Array.isArray(dados.treino)) ? dados.treino : [];
+      var lidasT = brutoTre.filter(function (d) { return d && d.titulo; }).map(function (i) {
+        var r = parseInt(i.reps, 10);
+        return {
+          id: i.id || uid(),
+          criadoEm: i.criadoEm || Date.now(),
+          origemId: i.origemId || null,
+          titulo: String(i.titulo || "").trim(),
+          reps: isNaN(r) || r < 0 ? 0 : r
+        };
+      });
       var lidas = brutoMag.filter(function (d) { return d && d.titulo; }).map(normalizar);
       var lidasM = brutoMan.filter(function (d) { return d && d.titulo; }).map(normalizarM);
-      var lidasC = brutoCar.filter(function (d) { return d && d.titulo; }).map(normalizarM);
+      // arquivos antigos traziam o cardistry separado; ele entra junto das manobras
+      lidasM = lidasM.concat(brutoCar.filter(function (d) { return d && d.titulo; }).map(normalizarM));
       var lidasP = brutoPort.filter(function (d) { return d && d.titulo; }).map(function (i) {
         return {
           id: i.id || uid(),
@@ -1444,36 +1735,37 @@
           descricao: i.descricao || ""
         };
       });
-      if (!lidas.length && !lidasM.length && !lidasC.length && !lidasP.length) {
+      if (!lidas.length && !lidasM.length && !lidasP.length) {
         msg("Nenhuma mágica, manobra ou número encontrado nesse arquivo."); return;
       }
 
       if (modo === "substituir") {
         if (!confirm("Isso apaga as " + tricks.length + " mágicas, " + secManobras.lista().length +
-          " manobras, " + secCardistry.lista().length + " movimentos e o show com " +
-          roteiro.length + " números. Continuar?")) return;
+          " manobras e o show com " + roteiro.length + " números. Continuar?")) return;
         tricks = lidas;
         secManobras.definir(lidasM);
-        secCardistry.definir(lidasC);
         roteiro = lidasP; salvarP();
-        $("notas-texto").value = brutoNotas; gravarNotas();
+        rotina = lidasT; feitosHoje = []; salvarFeitos(); salvarT();
+        $("notas-texto").value = brutoNotas; notasEditadas = true; gravarNotas();
         msg("Substituído: " + lidas.length + " mágicas, " + lidasM.length + " manobras, " +
-          lidasC.length + " movimentos e " + lidasP.length + " números no show.");
+          lidasP.length + " números e " + lidasT.length + " exercícios.");
       } else {
         var ids = tricks.map(function (t) { return t.id; });
         var novas = lidas.filter(function (l) { return ids.indexOf(l.id) === -1; });
         tricks = novas.concat(tricks);
         var novasM = secManobras.juntar(lidasM);
-        var novasC = secCardistry.juntar(lidasC);
         var idsP = roteiro.map(function (r) { return r.id; });
         var novosP = lidasP.filter(function (l) { return idsP.indexOf(l.id) === -1; });
         roteiro = roteiro.concat(novosP); salvarP();
+        var idsT = rotina.map(function (r) { return r.id; });
+        var novosT = lidasT.filter(function (l) { return idsT.indexOf(l.id) === -1; });
+        rotina = rotina.concat(novosT); salvarT();
         if (brutoNotas.trim() && !lerNotas().trim()) {
-          $("notas-texto").value = brutoNotas; gravarNotas();
+          $("notas-texto").value = brutoNotas; notasEditadas = true; gravarNotas();
         }
-        msg((novas.length + novasM + novasC + novosP.length)
-          ? novas.length + " mágicas, " + novasM + " manobras, " + novasC + " movimentos e " +
-            novosP.length + " números adicionados."
+        msg((novas.length + novasM + novosP.length + novosT.length)
+          ? novas.length + " mágicas, " + novasM + " manobras, " + novosP.length +
+            " números e " + novosT.length + " exercícios adicionados."
           : "Nada novo: tudo já estava no caderno.");
       }
       $("b-cola").value = "";
@@ -1524,6 +1816,21 @@
     var b = e.target.closest("button[data-aba]"); if (!b) return;
     trocarAba(b.getAttribute("data-aba"));
   });
+  $("btn-add-treino").addEventListener("click", abrirEscolhaTreino);
+  $("painel-dia").addEventListener("click", function (e) {
+    if (!e.target.closest("#btn-zerar")) return;
+    feitosHoje = []; salvarFeitos();
+  });
+  $("rotina").addEventListener("click", function (e) {
+    var mk = e.target.closest("button[data-marca]");
+    if (mk) { alternarFeito(mk.getAttribute("data-marca")); return; }
+    var sb = e.target.closest("button[data-sobe-ex]");
+    if (sb) { moverEx(sb.getAttribute("data-sobe-ex"), -1); return; }
+    var ds = e.target.closest("button[data-desce-ex]");
+    if (ds) { moverEx(ds.getAttribute("data-desce-ex"), 1); return; }
+    var ab = e.target.closest("button[data-ex]");
+    if (ab) { var x = acharEx(ab.getAttribute("data-ex")); if (x) abrirFormEx(x); }
+  });
   $("btn-add-port").addEventListener("click", abrirEscolha);
   $("roteiro").addEventListener("click", function (e) {
     var sobe = e.target.closest("button[data-sobe]");
@@ -1563,8 +1870,9 @@
   carregar();
   render();
   secManobras.carregar(); secManobras.render();
-  secCardistry.carregar(); secCardistry.render();
+  juntarCardistryAntigo();
   carregarP(); renderP(); iniciarNotas();
+  carregarT(); renderT();
   var salva = "magicas";
   try { salva = localStorage.getItem("caderno:aba") || "magicas"; } catch (e) {}
   trocarAba(salva);
